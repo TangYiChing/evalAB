@@ -1,0 +1,4 @@
+youtube-transcript-api>=1.2,<2
+networkx>=3.4
+python-louvain>=0.16
+yt-dlp

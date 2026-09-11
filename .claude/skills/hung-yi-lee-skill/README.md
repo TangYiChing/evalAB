@@ -1,0 +1,358 @@
+[English](./README.en.md) | **繁體中文**
+
+# 李宏毅.skill
+
+<div align="center">
+
+<img src="./assets/hung-yi-lee.png" alt="李宏毅老師" width="240" style="border-radius: 12px;" />
+
+<sub>受李宏毅教學風格啟發（本人授權的描述方式）。這個 skill 模仿教學方法，不冒充本人。</sub>
+
+<br><br>
+
+> *「好，那我們就開始上課吧。」*
+
+<br>
+
+**蒸餾李宏毅老師。不是語錄合集，是老師的知識與思維框架。**
+
+<br>
+
+基於 478 支 YouTube 影片、27 份完整逐字稿、8 個主題頁面、<br>
+4 份精選研究參考資料深度調研，<br>
+建構 916 節點知識圖譜、10 個概念社群、完整的教學語感 DNA。<br>
+**並且——經過跟老師本人的真實訪談校準。**
+
+[看效果](#效果示例) · [這個 skill 是怎麼長出來的](#這個-skill-是怎麼長出來的) · [安裝](#安裝) · [知識圖譜](#知識圖譜) · [蒸餾了什麼](#蒸餾了什麼)
+
+</div>
+
+---
+
+## 這個 skill 是怎麼長出來的
+
+> 老師說過一條規則：教東西不要直接講方法本身，要讓人看到「這個想法是怎麼被想出來的」。
+> 所以這個 repo 的故事，我們也照這個規則來講一遍。
+
+```
+李宏毅    ❯ 好，那我們先想一個問題。
+
+            假設你今天想做一個「像某個老師上課」的 AI，
+            你第一個會想到的做法是什麼？
+
+            你可能會想說：那就把他的影片字幕餵進去嘛。
+            對，這就是第一版。我們抓了逐字稿，
+            歸納出教學結構、語感標記、知識圖譜。
+
+            但這個做法有一個你想不到的極限。
+
+            逐字稿是「倖存者偏差」。它只留下了
+            鏡頭前講出來的東西。老師為什麼這樣備課、
+            哪些梗他試過又丟掉、他刻意不講什麼——
+            這些，字幕裡通通沒有。
+
+            那怎麼辦呢？
+```
+
+故事分成三步，每一步都是在補上一版的極限：
+
+**第一步 — 用 Fable 5 把語感挖深。**
+我們用 **Fable 5**（`claude-fable-5`）對 27 份逐字稿做頻率探勘，挖出原本 skill 沒收錄的招牌語癖：`比如說` 出現 609 次（是「舉例來說」的 14 倍）、`假設` 518 次、`而已` 160 次、`就結束了` 36 次……還有那句招牌的「硬 train 一發」。這些不是憑印象加的，是數出來的。
+
+**第二步 — 用 Fable 5 產生訪談稿。**
+逐字稿挖再深，也補不了「負空間」。所以我們用 **Fable 5** 跑了一個多 agent workflow，從 SKILL.md、逐字稿、golden/negative 範例裡挖出真正的「風格岔路」，自動生成一份訪談腳本 —— 包含引句反應題、反向生成題，還有 10 道扎根在真實語料上的 A/B 對比題。腳本在 [`references/interview-protocol.md`](references/interview-protocol.md)。
+
+**第三步 — 真的去問老師，然後讓本人的回答凌駕一切。**
+拿著稿子，我們真的訪談了老師本人。他的回答變成 skill 裡權威最高的一層（`SKILL.md` 的 First-Person Calibration 區塊），**逐字稿推測出來的東西，只要跟本人說的衝突，一律以本人為準。**
+
+訪談校準後，skill 才知道這些原本不知道的事：
+
+| 原本 skill 以為 | 老師本人說 |
+|---|---|
+| 開場用「熱騰騰的文件」很生動 | 不會用「熱騰騰」這個詞 |
+| 嚇人的事拿日常生活打比方（國中清瀏覽記錄） | 太普通沒梗，他會用「更莫名其妙的動漫比喻」 |
+| 數字換算成「一個上班日」就夠具體 | 不夠，要讓人感受到那個代價有多貴、多稀缺 |
+| 給 AI 三條規則？我們自己猜了一套 | 本人親述：① 內容要有**脈絡**不要流水帳 ② 一定要有**梗/punchline** ③ 教方法要引導學生想「**這方法是怎麼被想出來的**」 |
+
+> 一句話總結：這個 skill 不是「逆向工程一個老師」，
+> 是「逆向工程之後，再回去跟本人對答案」。
+> 而你現在看的這個 README，就是照著老師第三條規則寫的。
+
+---
+
+### 問：什麼是 Attention？
+
+```
+李宏毅    ❯ 好，我們今天來講 attention。
+
+            你可能會想說，attention 不就是「注意力」嗎？
+            對，但在 deep learning 裡面，它的意思更精確。
+
+            先講 black box。你有一個 sequence 進來，
+            每個位置都產生一個 output。
+            重點是：每個 output 不是只看自己那個位置，
+            它會「看」整個 sequence 的其他位置。
+            
+            那它怎麼決定要看哪裡？這就是 attention 在做的事。
+
+            機制很簡單。每個位置算出 query、key、value。
+            Query 跟 Key 做 dot product，得到一個分數。
+            分數高的，就代表「我應該多注意你」。
+            然後用這些分數加權 Value，就是 output。
+
+            一句話：attention 就是「讓模型自己學會該看哪裡」。
+            
+            → 逐字稿來源：【生成式人工智慧與機器學習導論2025】第3講
+            → 圖譜路徑：self-attention → 語言模型 → Transformer → RoPE
+```
+
+### 問：為什麼 DeepSeek-R1 會「思考」？
+
+```
+李宏毅    ❯ 欸，這個問題很好。我們先講一個直覺。
+
+            你有沒有遇過一種考試題，你看到題目，
+            腦袋裡先冒出一個答案，但你知道那個答案可能是錯的？
+            然後你會開始想：「等一下，如果是這樣的話…」
+            這個「等一下」的過程，就是 reasoning。
+
+            DeepSeek-R1 做的事情就是：
+            讓模型在回答之前，先跟自己「吵一架」。
+
+            怎麼做到？Reinforcement Learning。
+            但不是隨便的 RL 喔。
+            它讓模型自己產生一段「思考過程」，
+            然後用結果的對錯來給 reward。
+
+            所以模型學會的不是「答案是什麼」，
+            而是「怎麼想才會對」。
+
+            → 逐字稿來源：第七講 DeepSeek-R1 深度思考
+            → 圖譜社群：ML Fundamentals (396 nodes)
+```
+
+### 問：這跟 ChatGPT 套個面具有什麼不同？
+
+```
+李宏毅    ❯ 很不一樣。讓我跟你講。
+
+            一般的 persona prompt，就是告訴 LLM：
+            「你現在是某某人，請用他的風格回答。」
+            那其實就是 cosplay 嘛。
+
+            這個 skill 不一樣的地方：
+            
+            1. 它有真正的逐字稿。每個回答都可以追溯到
+               老師哪一堂課、哪一分鐘講過類似的東西。
+            
+            2. 它有知識圖譜。916 個概念節點、3664 條邊。
+               不是靠 LLM 自己猜概念之間的關係，
+               是從課程語料裡真的提取出來的。
+            
+            3. 它有教學結構。不只是「用某種語氣說話」，
+               而是「先講直覺 → 再講 black box → 再打開盒子
+               → 最後講陷阱」。這個架構是從逐字稿裡歸納的。
+
+            所以差別是：persona prompt 是裝扮，
+            這個 skill 是把一個老師的思考方式裝進系統裡。
+```
+
+> 完整對話記錄在 [`references/examples/`](references/examples/) 目錄。
+
+---
+
+## 安裝
+
+```bash
+git clone https://github.com/voidful/hung-yi-lee-skill.git
+cd hung-yi-lee-skill
+pip install -r requirements.txt
+```
+
+放到你的 AI coding assistant 可以讀取的目錄，讓它讀 `SKILL.md` 就能啟動。
+
+```
+> 用李宏毅老師的風格幫我解釋 transformer
+> 老師會怎麼看這份 AI safety report？
+> 什麼是 self-supervised learning？像老師上課那樣講
+```
+
+---
+
+## 知識圖譜
+
+不只是逐字稿搜尋。這個 skill 內建了從課程語料提取的知識圖譜。
+
+### Graph Stats
+
+| 指標 | 數值 |
+|------|------|
+| 節點 | 916 |
+| 邊 | 3,664 |
+| 社群 | 10 |
+| EXTRACTED 邊 | 1,621 |
+| INFERRED 邊 | 2,043 |
+
+### God Nodes — 整個課程的交叉路口
+
+| 概念 | 類型 | 連接度 |
+|------|------|--------|
+| ML Fundamentals | topic | 385 |
+| 語言模型 | concept | 251 |
+| Standalone Talks | series | 148 |
+| Llama | concept | 101 |
+| 解剖 | concept | 100 |
+| Transformer | concept | 83 |
+
+### 10 個概念社群
+
+| 社群 | 節點數 | 核心概念 |
+|------|--------|----------|
+| ML Fundamentals | 396 | 機器學習基礎、regression、classification |
+| Diffusion And Generation | 116 | 擴散模型、flow matching、生成 |
+| Speech And Audio | 81 | 語音辨識、合成、codec |
+| Evaluation | 79 | benchmark、reward model |
+| Agents | 72 | AI Agent、context engineering |
+| Model Editing | 33 | model merging、task vector |
+
+```bash
+# 用圖譜導航回答問題
+python3 scripts/hungyi_kb.py graph query "attention mechanism"
+python3 scripts/hungyi_kb.py graph query "語音模型"
+
+# 打開互動式視覺化
+open wiki/graph/graph.html
+```
+
+---
+
+## 蒸餾了什麼
+
+### 教學架構 DNA
+
+每個回答都遵循從逐字稿歸納的教學結構：
+
+1. **直覺先行** — 用一句話講核心概念
+2. **Black Box** — 先講 input / output / objective
+3. **開箱機制** — 打開盒子講裡面怎麼運作
+4. **陷阱提醒** — 常見誤解、limitation、debug 觀點
+5. **簡短回顧** — 一小段 recap 收尾
+
+### 語感標記
+
+| 標記 | 用途 |
+|------|------|
+| 「你可能會想說…」 | 預測學生疑問 |
+| 「先講 black box」| 由外到內教學 |
+| 「為什麼？因為…」 | 自問自答節奏 |
+| 「這個跟老師講過的 X 有關…」 | 跨主題橋接 |
+| 喔、嘛、啊、耶 | 口語感 |
+
+### 核心教學精神
+
+| 原則 | 說明 |
+|------|------|
+| **Benchmark 懷疑論** | 數字本身不是答案，要問「它量的是什麼？」|
+| **知識誠實** | 區分事實與推論，不確定就直說 |
+| **具體類比** | 把抽象概念變成日常生活的畫面 |
+| **先講直覺再講數學** | 能被大學生聽懂才算講清楚 |
+
+---
+
+## 資料來源
+
+### 課程語料
+
+- 478 支 YouTube 影片 metadata
+- 27 份完整逐字稿（持續擴充中）
+- 8 個主題頁面（ML, LLM, Speech, Diffusion, Agents...）
+- 203 個系列頁面
+
+### 精選參考
+
+| 文件 | 內容 |
+|------|------|
+| `references/persona.md` | 教學人設與語感定義 |
+| `references/spirit.md` | 深層教學哲學與價值觀 |
+| `references/work.md` | 技術範圍與研究領域 |
+| `references/sources.md` | 資料來源清單 |
+
+---
+
+## 倉庫結構
+
+```
+hung-yi-lee-skill/
+├── SKILL.md                              # Skill 進入點
+├── AGENTS.md                             # Wiki 維護 schema
+├── scripts/
+│   ├── hungyi_kb.py                      # CLI 工具（搜尋/編譯/圖譜）
+│   └── hungyi_graph.py                   # 知識圖譜引擎
+├── raw/youtube/
+│   ├── channel_videos.json               # 頻道 metadata
+│   ├── transcript_index.json             # 逐字稿索引
+│   └── transcripts/*.md                  # 快取的逐字稿
+├── wiki/
+│   ├── index.md                          # 知識庫入口
+│   ├── topic-map.md                      # 主題地圖
+│   ├── query-playbook.md                 # 查詢流程
+│   ├── graph/
+│   │   ├── GRAPH_REPORT.md               # 圖譜分析報告
+│   │   ├── graph.json                    # 持久化圖譜
+│   │   └── graph.html                    # 互動式視覺化
+│   ├── topics/*.md                       # 主題頁面
+│   └── series/*.md                       # 系列頁面
+└── references/                           # 精選參考資料
+```
+
+---
+
+## CLI 指令
+
+```bash
+# 同步頻道 metadata
+python3 scripts/hungyi_kb.py sync-metadata
+
+# 快取逐字稿
+python3 scripts/hungyi_kb.py sync-transcripts --limit 50
+python3 scripts/hungyi_kb.py sync-transcripts --title-contains "生成式AI"
+
+# 編譯 wiki
+python3 scripts/hungyi_kb.py compile
+
+# 搜尋
+python3 scripts/hungyi_kb.py search "attention" --limit 8
+
+# 知識圖譜
+python3 scripts/hungyi_kb.py graph build
+python3 scripts/hungyi_kb.py graph query "什麼是 transformer"
+python3 scripts/hungyi_kb.py graph report
+
+# 健康檢查
+python3 scripts/hungyi_kb.py lint
+```
+
+---
+
+## 為什麼這比靜態 RAG 更好
+
+| | 靜態 RAG | 這個 Skill |
+|---|---|---|
+| 知識結構 | 平面向量搜尋 | 916 節點知識圖譜 + keyword 索引 |
+| 概念關聯 | 靠 embedding 相似度猜 | 從語料提取的真實關係 |
+| 跨主題發現 | 幾乎不可能 | Surprising Connections 自動浮出 |
+| 教學路線 | 無 | God Nodes + community 結構 |
+| 累積性 | 每次重來 | Wiki + 圖譜持久化，查詢歸檔 |
+| 可追溯 | 不確定來源 | 每條邊標記 EXTRACTED / INFERRED |
+
+---
+
+## License
+
+MIT
+
+<div align="center">
+
+*「你不需要先學會所有的數學，你只需要先知道這個東西在幹嘛。」*
+
+</div>
