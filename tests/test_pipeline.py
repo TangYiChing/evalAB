@@ -69,12 +69,17 @@ class TestChecks:
             result = run_all_checks(chain, name)
             assert result.hard_gates == [], f"{name} unexpectedly hard-gated: {result.hard_gates}"
 
-    def test_odd_cysteine_count_hard_gates(self):
+    def test_odd_cysteine_count_is_a_heavily_weighted_soft_flag_not_a_hard_gate(self):
         # GFNIKDTY -> GFNIKDTC: swaps a Y for an extra, unpaired C in CDR1.
+        # Real solved structures (e.g. 1sy6) can have a genuine odd count
+        # from a non-canonical disulfide - sequence alone can't tell that
+        # apart from a real defect, so this must not auto-reject.
         broken_vh = VH_REF.replace("GFNIKDTY", "GFNIKDTC")
         chains = number_antibody(broken_vh, VL_REF)
         result = run_all_checks(chains["VH"], "VH")
-        assert any(f.check == "cysteine_pairing" for f in result.hard_gates)
+        assert not any(f.check == "cysteine_pairing" for f in result.hard_gates)
+        soft_cys_flags = [f for f in result.soft_flags if f.check == "cysteine_pairing"]
+        assert any("odd cysteine count" in f.message for f in soft_cys_flags)
 
     def test_cdr_n_glycosylation_hard_gates(self):
         # Insert an N-x-S/T motif into CDR-H1 (GFNIKDTY -> GFNISDTY: N-I-S).
@@ -106,11 +111,11 @@ class TestFusion:
         assert result.verdict in ("GO", "CONDITIONAL")
         assert result.error is None
 
-    def test_broken_cysteine_pair_is_no_go(self):
+    def test_broken_cysteine_pair_is_no_go_but_via_score_not_hard_gate(self):
         broken_vh = VH_REF.replace("GFNIKDTY", "GFNIKDTC")
         result = screen_candidate("test", broken_vh, VL_REF, run_immunogenicity=False)
         assert result.verdict == "NO-GO"
-        assert result.score == float("inf")
+        assert result.score != float("inf")  # soft-scored, not hard-gated
         assert "cysteine" in result.top_reasons[0].lower()
 
     def test_garbage_input_is_error_not_crash(self):

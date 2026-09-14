@@ -74,10 +74,20 @@ def check_sequence_sanity(chain: NumberedChain, chain_name: str) -> list[Flag]:
     return flags
 
 
+CYSTEINE_ODD_COUNT_WEIGHT = 8.0
+
+
 def check_cysteine_pairing(chain: NumberedChain, chain_name: str) -> list[Flag]:
     """Flag odd cysteine counts. Real pairing (which Cys bonds to which) needs
-    a structure — this is the sequence-only proxy: an odd count means at
-    least one cysteine can't be disulfide-paired at all.
+    a structure — sequence alone can only say "an odd count means at least
+    one cysteine cannot be canonically paired," not whether that's a real
+    defect. This was a hard gate initially, but real solved structures (e.g.
+    a genuine non-canonical CDR-H3 disulfide) showed that's too blunt: an
+    odd count is real biology often enough that auto-rejecting on it alone
+    throws away legitimate candidates. Downgraded to a heavily-weighted soft
+    flag — real pairing confirmation is deferred to a future Tier 2
+    structure-based check, which can actually resolve which cysteines are
+    close enough in 3D to bond.
     """
     flags = []
     seq = chain.full_sequence()
@@ -87,11 +97,14 @@ def check_cysteine_pairing(chain: NumberedChain, chain_name: str) -> list[Flag]:
         flags.append(
             Flag(
                 check="cysteine_pairing",
-                severity="hard_gate",
+                severity="soft",
                 region="chain",
+                weight=CYSTEINE_ODD_COUNT_WEIGHT,
                 message=(
                     f"{chain_name} has an odd cysteine count ({cys_count}) — at least one "
-                    "cysteine cannot be disulfide-paired, high risk of misfolding/aggregation"
+                    "cysteine cannot be canonically disulfide-paired; sequence alone can't "
+                    "confirm whether this is a real defect or a non-canonical disulfide, "
+                    "needs structural confirmation before this is disqualifying"
                 ),
             )
         )
