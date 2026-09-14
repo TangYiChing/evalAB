@@ -230,7 +230,9 @@ ALL_CHECKS = [
 
 
 def run_all_checks(chain: NumberedChain, chain_name: str) -> ChainCheckResult:
+    from .developability import check_developability  # local import: avoids a cycle, developability.py imports Flag from here
+
     result = ChainCheckResult(chain_name=chain_name)
-    for check_fn in ALL_CHECKS:
+    for check_fn in ALL_CHECKS + [check_developability]:
         result.flags.extend(check_fn(chain, chain_name))
     return result
