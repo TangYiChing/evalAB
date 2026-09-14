@@ -43,6 +43,26 @@ UNKNOWN = "unknown"  # no germline assignment available at all
 # ANARCI's germline tables are keyed by chain class, not by chain_type.
 _CHAIN_CLASS = {"H": "H", "K": "K", "L": "L"}
 
+# Tolerance belongs to the PATIENT, not to the molecule.
+#
+# This is the subtle part, and getting it wrong inverts the check. ANARCI
+# assigns each chain its own closest germline — for a murine antibody that is
+# a mouse V gene. Comparing a murine framework against mouse germline marks it
+# "self" and drops its peptides, but a murine framework is emphatically NOT
+# self to a human patient: that is the classic HAMA failure mode.
+#
+# Measured on murine antibodies from PLAbDab, strong binders dropped as self:
+#
+#   ID                VH v_gene        strong   vs mouse ref   vs human ref
+#   UCY74699_UCY74691 IGHV5-9-3*01         10              6              0
+#   AVY28417_AVY28469 IGHV2-2*03           11              9              0
+#   QRJ72240_QRJ72247 IGHV1-71-16*01        7              5              0
+#
+# So the reference species is a property of who is being treated, and it
+# defaults to human. A non-human framework then correctly shows up as almost
+# entirely non-self, which is the signal we want, not noise to suppress.
+REFERENCE_SPECIES = "human"
+
 
 @dataclass
 class GermlineProfile:
@@ -70,11 +90,45 @@ class GermlineProfile:
         return bool(window) and all(s == GERMLINE for s in window)
 
 
-def germline_profile(chain: NumberedChain) -> GermlineProfile:
-    """Classify every residue of a numbered chain as germline / mutated / beyond-V.
+def _closest_v_gene(
+    chain: NumberedChain, species: str, table: dict
+) -> tuple[str, float] | None:
+    """Closest V gene to this chain WITHIN `species`, by IMGT-aligned identity.
 
-    Degrades to all-UNKNOWN rather than raising if ANARCI could not assign a
-    germline — the caller then has to treat every peptide as potentially
+    Needed when the chain's own assigned germline is a different species from
+    the patient's: a murine antibody has no mouse-independent germline call,
+    so we ask "what human V gene is this closest to" and measure divergence
+    from that.
+    """
+    residues = [r for r in chain.residues if r.aa != "-"]
+    best_gene, best_identity = None, -1.0
+    for gene, reference in table.items():
+        matched = compared = 0
+        for residue in residues:
+            index = residue.position - 1
+            if index < len(reference) and reference[index] != "-":
+                compared += 1
+                matched += reference[index] == residue.aa
+        if compared:
+            identity = matched / compared
+            if identity > best_identity:
+                best_gene, best_identity = gene, identity
+    return (best_gene, best_identity) if best_gene else None
+
+
+def germline_profile(
+    chain: NumberedChain, reference_species: str = REFERENCE_SPECIES
+) -> GermlineProfile:
+    """Classify every residue as germline / mutated / beyond-V.
+
+    Args:
+        reference_species: whose tolerance is being modelled — the PATIENT's
+            species, not the antibody's. Defaults to human. See the comment on
+            REFERENCE_SPECIES for why this distinction inverts the check if
+            got wrong.
+
+    Degrades to all-UNKNOWN rather than raising if no germline can be
+    assigned — the caller then has to treat every peptide as potentially
     non-self, which is the conservative direction to fail in.
     """
     residues = [r for r in chain.residues if r.aa != "-"]
@@ -86,10 +140,30 @@ def germline_profile(chain: NumberedChain) -> GermlineProfile:
         from anarci import germlines as anarci_germlines
 
         chain_class = _CHAIN_CLASS.get(chain.chain_type, chain.chain_type)
-        reference = anarci_germlines.all_germlines["V"][chain_class][chain.v_species][
-            chain.v_gene
+        species_table = anarci_germlines.all_germlines["V"][chain_class][
+            reference_species
         ]
     except (ImportError, KeyError):
+        return GermlineProfile(
+            chain.v_gene, chain.v_species, chain.v_identity, [UNKNOWN] * len(residues)
+        )
+
+    if chain.v_species == reference_species:
+        v_gene, v_identity = chain.v_gene, chain.v_identity
+    else:
+        # Non-matching species: re-anchor onto the closest gene of the
+        # patient's species. Everything that differs from it is then correctly
+        # treated as non-self.
+        closest = _closest_v_gene(chain, reference_species, species_table)
+        if closest is None:
+            return GermlineProfile(
+                chain.v_gene, chain.v_species, chain.v_identity,
+                [UNKNOWN] * len(residues),
+            )
+        v_gene, v_identity = closest
+
+    reference = species_table.get(v_gene)
+    if reference is None:
         return GermlineProfile(
             chain.v_gene, chain.v_species, chain.v_identity, [UNKNOWN] * len(residues)
         )
@@ -111,4 +185,4 @@ def germline_profile(chain: NumberedChain) -> GermlineProfile:
             status.append(GERMLINE)
         else:
             status.append(MUTATED)
-    return GermlineProfile(chain.v_gene, chain.v_species, chain.v_identity, status)
+    return GermlineProfile(v_gene, reference_species, v_identity, status)

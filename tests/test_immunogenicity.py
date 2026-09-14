@@ -16,6 +16,7 @@ from antibody_prescreen.germline import (
     BEYOND_V,
     GERMLINE,
     MUTATED,
+    REFERENCE_SPECIES,
     germline_profile,
 )
 from antibody_prescreen.immunogenicity import check_immunogenicity
@@ -105,6 +106,58 @@ def test_profile_degrades_without_a_germline_call():
     # is_self must be False when germline is unknown, so an unknown chain
     # fails toward reporting binders rather than silently dropping them.
     assert not profile.is_self(0, 9)
+
+
+# --- reference species: tolerance belongs to the patient ------------------
+
+
+def test_reference_species_defaults_to_human():
+    assert REFERENCE_SPECIES == "human"
+
+
+def test_murine_framework_is_not_self_against_human_germline():
+    """A murine framework must NOT be treated as self — that is the HAMA case.
+
+    ANARCI assigns a murine chain a mouse V gene. Scoring it against mouse
+    germline marks its framework "self" and silently drops the very peptides
+    that make murine antibodies immunogenic in people. Measured on PLAbDab
+    murine antibodies, strong binders dropped as self: 6/10, 9/11, 5/7 against
+    mouse reference; 0 against human reference.
+
+    This test uses a humanised-framework chain re-anchored onto mouse to make
+    the direction of the effect assertable without a network call: the same
+    sequence must look more self against its own species than against another.
+    """
+    chain = number_antibody(VH_REF, VL_REF)["VH"]
+
+    human = germline_profile(chain, reference_species="human")
+    mouse = germline_profile(chain, reference_species="mouse")
+
+    assert human.available and mouse.available
+    assert human.species == "human"
+    assert mouse.species == "mouse"
+
+    n_self_human = sum(1 for s in human.status if s == GERMLINE)
+    n_self_mouse = sum(1 for s in mouse.status if s == GERMLINE)
+    assert n_self_human > n_self_mouse, (
+        "a human-framework antibody must look more self against human germline "
+        "than against mouse — if this inverts, the reference species is wired "
+        "backwards and murine candidates will be under-flagged"
+    )
+
+
+def test_cross_species_profile_reanchors_to_the_reference():
+    """With a non-matching species, the profile reports the re-anchored gene."""
+    chain = number_antibody(VH_REF, VL_REF)["VH"]
+    assert chain.v_species == "human"
+
+    mouse = germline_profile(chain, reference_species="mouse")
+    assert mouse.species == "mouse"
+    assert mouse.v_gene != chain.v_gene, (
+        "should have re-anchored onto the closest mouse V gene, not kept the "
+        "human assignment"
+    )
+    assert mouse.identity is not None
 
 
 # --- V-domain integrity (the AA-level answer to "productivity") ------------

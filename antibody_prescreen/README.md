@@ -384,6 +384,25 @@ round-trip, and no web service. Three residue states, not two:
 Note that CDR3 is only *partly* junctional: IMGT 105-106 (the C-A-R stem) is
 V-gene encoded; 107 onward is junction.
 
+### Tolerance belongs to the patient, not to the molecule
+
+The germline reference is **human by default**, regardless of what species
+ANARCI assigns the chain. This distinction inverts the check if got wrong.
+
+ANARCI gives a murine chain a mouse V gene. Comparing a murine framework
+against *mouse* germline marks it "self" and drops exactly the peptides that
+make murine antibodies immunogenic in people — the classic HAMA failure.
+Measured on PLAbDab murine antibodies, strong binders dropped as self:
+
+| Antibody | VH V gene | Strong binders | Dropped vs mouse ref | Dropped vs human ref |
+|---|---|---|---|---|
+| UCY74699_UCY74691 | IGHV5-9-3*01 | 10 | 6 | **0** |
+| AVY28417_AVY28469 | IGHV2-2*03 | 11 | 9 | **0** |
+| QRJ72240_QRJ72247 | IGHV1-71-16*01 | 7 | 5 | **0** |
+
+A non-human framework now correctly reads as almost entirely non-self. Pass
+`reference_species=` to model a different patient population.
+
 ### Two layers, reported separately
 
 | Flag | Source | Claim |
