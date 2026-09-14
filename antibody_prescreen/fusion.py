@@ -12,10 +12,27 @@ from .checks import Flag, run_all_checks
 from .immunogenicity import check_immunogenicity
 from .numbering import NumberingError, number_antibody
 
-# Placeholder thresholds — NOT calibrated yet. Stage D (mini calibration on a
-# handful of approved mAbs) sets real values; until then these are a rough
-# first guess so the pipeline is runnable end-to-end today.
-T_LOW = 15.0
+# Calibrated against 508 real, structurally-solved antibodies from the
+# ANTIPASTI-curated SAbDab dataset (see data/sabdab_derived_candidates.json
+# and sabdab_source.py) — RCSB/SAbDab/TheraSAbDab were all unreachable from
+# the build environment, so this dataset (GitHub-hosted, derived from real
+# PDB structures) stood in for the originally planned TheraSAbDab set.
+#
+# This is a real improvement over the original 3-candidate placeholder, but
+# it is NOT the same thing as the plan's original Stage D: this population
+# is "antibodies that were solvable/crystallizable" (a structural-biology
+# selection), not "antibodies with known real-world clinical/manufacturing
+# outcomes." A structure existing says nothing about developability,
+# immunogenicity in patients, or manufacturing success — cross-referencing
+# against literature-documented liabilities (the original Stage D ask) is
+# still outstanding.
+#
+# Score distribution across 466 non-hard-gated candidates: min=15.59,
+# median=31.17, p90=39.72, max=50.91. Thresholds set at the median (roughly
+# half of a real antibody population lands GO) and the 90th percentile
+# (worst ~10% lands NO-GO), rather than the earlier placeholder values which
+# put effectively 100% of real structures below GO.
+T_LOW = 31.0
 T_HIGH = 40.0
 
 
