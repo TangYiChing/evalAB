@@ -20,6 +20,15 @@ default. See `docs/antibody-prescreen-agent-plan.md` for the design rationale.
 
 ## Quick start
 
+Runnable end-to-end example on real data, no setup beyond the [Setup](#setup)
+step below — screens 10 real candidates from the committed dataset:
+
+```bash
+python3 examples/screen_candidates.py
+```
+
+For your own candidates, build the same input shape:
+
 ```python
 from antibody_prescreen import screen_batch, format_report
 
