@@ -11,6 +11,7 @@ offline and fast. Run them with `-m network`.
 
 import pytest
 
+from antibody_prescreen import screen_candidate
 from antibody_prescreen.checks import check_v_domain_integrity
 from antibody_prescreen.germline import (
     BEYOND_V,
@@ -19,7 +20,7 @@ from antibody_prescreen.germline import (
     REFERENCE_SPECIES,
     germline_profile,
 )
-from antibody_prescreen.immunogenicity import check_immunogenicity
+from antibody_prescreen.immunogenicity import DEFAULT_ALLELES, check_immunogenicity
 from antibody_prescreen.numbering import number_antibody
 from tests.test_pipeline import VH_REF, VL_REF
 
@@ -241,6 +242,61 @@ def test_observed_evidence_is_reported_separately(tmp_path):
     assert len(observed) == 1
     assert "YVKQNTLKL" in observed[0].message
     assert "observed, not predicted" in observed[0].message
+
+
+@needs_network
+def test_prefetch_populates_the_same_cache_the_per_chain_path_reads(tmp_path):
+    """Batched prefetch must be a pure speedup, not a second code path.
+
+    It writes exactly the cache entries predict_mhcii reads, so results have
+    to be identical to fetching each chain on its own.
+    """
+    from antibody_prescreen.immunogenicity import predict_mhcii, prefetch_mhcii
+
+    chains = number_antibody(VH_REF, VL_REF)
+    sequences = [chains["VH"].full_sequence(), chains["VL"].full_sequence()]
+
+    fetched = prefetch_mhcii(sequences, cache_dir=tmp_path)
+    assert fetched == len(sequences)
+
+    # A second prefetch must be a no-op: everything is already cached.
+    assert prefetch_mhcii(sequences, cache_dir=tmp_path) == 0
+
+    for sequence in sequences:
+        batched = predict_mhcii(sequence, DEFAULT_ALLELES, cache_dir=tmp_path)
+        solo = predict_mhcii(sequence, DEFAULT_ALLELES, cache_dir=tmp_path / "solo")
+        assert batched and solo
+        key = lambda rows: sorted(
+            (r["allele"], r["start"], r["end"], r["rank"]) for r in rows
+        )
+        assert key(batched) == key(solo)
+
+
+@needs_network
+def test_batched_and_per_chain_screening_agree(tmp_path):
+    from antibody_prescreen import screen_batch
+
+    candidates = [
+        {"candidate_id": "ref", "vh_sequence": VH_REF, "vl_sequence": VL_REF},
+        {"candidate_id": "flu", "vh_sequence": VH_FLU_EPITOPE, "vl_sequence": VL_REF},
+    ]
+    batched = screen_batch(
+        candidates, run_immunogenicity=True, iedb_cache=tmp_path / "batched"
+    )
+    solo = [
+        screen_candidate(
+            c["candidate_id"], c["vh_sequence"], c["vl_sequence"],
+            run_immunogenicity=True, iedb_cache=tmp_path / "solo",
+        )
+        for c in candidates
+    ]
+    for a, b in zip(batched, solo):
+        assert a.verdict == b.verdict
+        assert a.score == b.score
+        flags = lambda r: sorted(
+            f.message for f in r.all_flags if f.check.startswith("immunogenicity")
+        )
+        assert flags(a) == flags(b)
 
 
 @needs_network

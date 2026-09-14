@@ -146,6 +146,24 @@ HTTP_TIMEOUT = 120
 HTTP_ATTEMPTS = 4
 HTTP_BACKOFF_BASE = 2.0
 
+# The API accepts multi-FASTA and reports which sequence each row came from in
+# its seq_num column, so a whole batch of chains goes in ONE request. Measured
+# per-chain cost against batch size (5 alleles, ~120-residue chains):
+#
+#     1 chain   2.82 s/chain      100 chains  0.353 s/chain
+#     5         0.839             200         0.313
+#    10         0.630             400         0.297
+#    25         0.472             600         0.304
+#
+# ~9x faster per chain, and it flattens out around 100-200. 200 is the default
+# because the response grows with it (6MB at 200, 19MB at 600) and a failed
+# request costs the whole batch — at 600 that is three minutes to redo.
+#
+# This also removes the reason to run IEDB calls concurrently, which is what
+# produced the order-correlated throttling that nearly invalidated the Step 7
+# calibration (see docs/calibration-step7-results.md).
+BATCH_SIZE = 200
+
 
 @dataclass
 class PredictedBinder:
@@ -267,6 +285,86 @@ def predict_mhcii(
     return rows or None
 
 
+def prefetch_mhcii(
+    sequences: list[str],
+    alleles: list[str] | None = None,
+    cache_dir: Path | None = None,
+    batch_size: int = BATCH_SIZE,
+    progress=None,
+) -> int:
+    """Warm the prediction cache for many chains with a few batched requests.
+
+    Populates exactly the same per-sequence cache entries `predict_mhcii`
+    reads, so callers do not change: run this once over a batch, then screen
+    normally and every lookup is a cache hit.
+
+    Returns the number of sequences fetched (already-cached ones are skipped).
+    """
+    alleles = alleles or DEFAULT_ALLELES
+    allele_key = ",".join(alleles)
+
+    pending = []
+    seen = set()
+    for sequence in sequences:
+        if sequence in seen:
+            continue
+        seen.add(sequence)
+        cache_file = _cache_path("mhcii", f"{METHOD}|{sequence}|{allele_key}", cache_dir)
+        if not (cache_file.exists() and cache_file.stat().st_size > 0):
+            pending.append(sequence)
+
+    fetched = 0
+    for start in range(0, len(pending), batch_size):
+        chunk = pending[start : start + batch_size]
+        fasta = "\n".join(f">s{i}\n{seq}" for i, seq in enumerate(chunk))
+        body = urllib.parse.urlencode(
+            {
+                "method": METHOD,
+                "sequence_text": fasta,
+                "allele": allele_key,
+                "length": ",".join([str(WINDOW_SIZE)] * len(alleles)),
+            }
+        ).encode()
+
+        text = _fetch_with_retry(IEDB_MHCII_URL, data=body)
+        if text is None:
+            # Leave this chunk uncached; the per-chain path will fetch it
+            # individually and degrade gracefully if that fails too.
+            continue
+
+        lines = [line for line in text.strip().splitlines() if line.strip()]
+        if len(lines) < 2 or "rank" not in lines[0].split("\t"):
+            # A whole batch rejected usually means one bad sequence in it.
+            # Don't cache the complaint against every member — let them go
+            # through individually so the real culprit is the only one marked.
+            continue
+
+        header = lines[0]
+        index = header.split("\t").index("seq_num")
+        by_sequence: dict[str, list[str]] = {}
+        for line in lines[1:]:
+            fields = line.split("\t")
+            if len(fields) <= index:
+                continue
+            by_sequence.setdefault(fields[index], []).append(line)
+
+        for i, sequence in enumerate(chunk, start=1):
+            rows = by_sequence.get(str(i))
+            if not rows:
+                continue
+            cache_file = _cache_path(
+                "mhcii", f"{METHOD}|{sequence}|{allele_key}", cache_dir
+            )
+            if not cache_file.exists():
+                cache_file.write_text("\n".join([header] + rows) + "\n")
+            fetched += 1
+
+        if progress:
+            progress(min(start + batch_size, len(pending)), len(pending))
+
+    return fetched
+
+
 # --- IEDB experimental evidence (IQ-API) ----------------------------------
 
 
@@ -287,6 +385,11 @@ def observed_tcell_records(
         {
             "linear_sequence": f"like.*{peptide}*",
             "select": "structure_id,linear_sequence,qualitative_measure,source_organism_name",
+            # Without an explicit order the API returns an arbitrary page of
+            # matches, so the same peptide yields a different record set (and
+            # a different flag message) on different runs. A screening tool
+            # has to be reproducible: pin the ordering.
+            "order": "structure_id.asc",
             "limit": str(limit),
         }
     )

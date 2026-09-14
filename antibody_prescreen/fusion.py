@@ -81,6 +81,7 @@ def screen_candidate(
     run_structure: bool = False,
     model_cache=None,
     predictor=None,
+    iedb_cache=None,
 ) -> CandidateResult:
     """Screen one VH/VL candidate.
 
@@ -114,7 +115,9 @@ def screen_candidate(
         all_flags.extend(result.flags)
 
         if run_immunogenicity:
-            immuno_result = check_immunogenicity(chain, chain_name)
+            immuno_result = check_immunogenicity(
+                chain, chain_name, cache_dir=iedb_cache
+            )
             all_flags.extend(immuno_result.flags)
             immuno_available = immuno_available or immuno_result.available
 
@@ -193,6 +196,7 @@ def screen_batch(
     run_immunogenicity: bool = True,
     run_structure: bool = False,
     model_cache=None,
+    iedb_cache=None,
 ) -> list[CandidateResult]:
     """candidates: list of {"candidate_id", "vh_sequence", "vl_sequence"} dicts.
 
@@ -200,6 +204,20 @@ def screen_batch(
     for the whole batch and reused — building it loads ~100MB of weights, so
     doing it per candidate would dominate the runtime of a large batch.
     """
+    if run_immunogenicity:
+        # One batched request per ~200 chains instead of one per chain. For a
+        # 1000-candidate batch that is ~10 requests and ~10 minutes instead of
+        # 2000 requests and ~90 minutes, and it removes the need to run IEDB
+        # calls concurrently — which is what caused the order-correlated
+        # throttling during Step 7 calibration.
+        from .immunogenicity import prefetch_mhcii
+
+        prefetch_mhcii(
+            [c["vh_sequence"] for c in candidates]
+            + [c["vl_sequence"] for c in candidates],
+            cache_dir=iedb_cache,
+        )
+
     predictor = None
     if run_structure:
         from .structure.modelling import ModellingError, get_predictor
@@ -220,6 +238,7 @@ def screen_batch(
             run_structure=run_structure,
             model_cache=model_cache,
             predictor=predictor,
+            iedb_cache=iedb_cache,
         )
         for c in candidates
     ]

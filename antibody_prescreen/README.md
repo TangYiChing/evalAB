@@ -491,6 +491,71 @@ a `*`. If real sequencing-derived nucleotide data ever enters the pipeline,
 V-QUEST productivity becomes meaningful again — it is not meaningful for
 amino acid input.
 
+## Scaling: what a 1,000-candidate batch costs
+
+Measured per-unit costs on an Apple M5, and what they project to for 1,000
+candidates (2,000 chains):
+
+| Stage | per unit | 1k serial | 1k, 3 workers |
+|---|---|---|---|
+| ABodyBuilder2 model | 6.0 s | 100 min | **33 min** |
+| TAP (psa + metrics) | 1.6 s | 27 min | 9 min |
+| ANARCI numbering (×2) | 0.07 s | 1 min | <1 min |
+| IEDB prediction, per chain | 2.82 s | 94 min | **94 min** (not parallelisable) |
+| IEDB prediction, batched @200 | 0.31 s | 10 min | **10 min** |
+
+**Total: ~137 min per-chain, ~53 min batched.**
+
+### IEDB was the bottleneck. It is not any more.
+
+The API accepts multi-FASTA and tags each result row with `seq_num`, so a
+whole batch of chains goes in one request. Measured per-chain cost against
+batch size (5 alleles, ~120-residue chains):
+
+| batch | s/chain | | batch | s/chain |
+|---|---|---|---|---|
+| 1 | 2.82 | | 100 | 0.353 |
+| 5 | 0.839 | | 200 | 0.313 |
+| 10 | 0.630 | | 400 | 0.297 |
+| 25 | 0.472 | | 600 | 0.304 |
+
+~9× faster per chain, flattening around 100–200. `BATCH_SIZE = 200` is the
+default: the response grows with the batch (6 MB at 200, 19 MB at 600) and a
+failed request costs the whole batch — at 600 that is three minutes to redo.
+
+`screen_batch(..., run_immunogenicity=True)` does this automatically — it
+prefetches the whole batch before scoring. The prefetch writes exactly the
+cache entries the per-chain path reads, so it is a pure speedup: results are
+identical either way, and there is a test asserting that.
+
+This also removes any reason to run IEDB calls concurrently, which is what
+produced the order-correlated throttling that nearly invalidated the Step 7
+calibration (`docs/calibration-step7-results.md`).
+
+### So the bottleneck is now ABodyBuilder2
+
+Options, roughly in order of effort:
+
+1. **Turn Tier 2 off for the first pass.** Tier 1 alone screens 1,000
+   candidates in about a minute. Run it first, then run TAP only on what
+   survives. This is usually the right answer: the point of a cheap tier is
+   to avoid paying for the expensive one.
+2. **Skip immunogenicity in bulk.** It is report-only (weight 0), so it
+   changes no verdict. Run it on the shortlist, where you will actually read
+   the flags.
+3. **Reuse the model cache.** Models are keyed by a hash of the VH/VL pair, so
+   re-runs and duplicate sequences are free. In an affinity-maturation
+   campaign where the light chain is constant, that is ~1,001 distinct chains
+   for 1,000 candidates rather than 2,000.
+4. **More cores.** Modelling is embarrassingly parallel. Three workers is the
+   ceiling on a 16 GB machine — each holds torch, ABodyBuilder2 weights and
+   OpenMM, and five of them got one killed mid-run. A 32–64 vCPU Linux box
+   runs the same code unchanged (see Step R in
+   `docs/tier2-tap-plabdab-plan.md`).
+5. **Local IEDB predictor**, if you want zero network dependency at scale:
+   `IEDB_MHC_II-3.0.1` is Linux-x86_64-only, so it belongs on that same
+   remote box, not on a Mac. See `docs/iedb-immunogenicity-evaluation.md`.
+
 ## What's not done
 
 - **Literature cross-referencing for calibration.** See "Data source" above —
