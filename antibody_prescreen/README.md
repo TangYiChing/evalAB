@@ -125,12 +125,15 @@ placement against literature-documented liabilities — is still outstanding.
   set, but still not cross-referenced against documented real-world
   developability/immunogenicity failures the way the original Stage D plan
   called for.
-- **Cysteine hard-gate may be too blunt.** An odd cysteine count can be a
-  genuine non-canonical disulfide (real biology, confirmed in one case) as
-  well as a real defect or a missing-residue artifact — sequence alone can't
-  tell these apart. Worth downgrading to a strong soft flag requiring human
-  review rather than an automatic hard gate, once there's a way to
-  distinguish the cases (e.g. structure-based confirmation in Tier 2).
+- ~~Cysteine hard-gate may be too blunt.~~ **Done**: downgraded from a hard
+  gate to a weighted soft flag (`CYSTEINE_ODD_COUNT_WEIGHT = 8.0` in
+  `checks.py`) — an odd count can be a genuine non-canonical disulfide (real
+  biology, confirmed via `1sy6`) as well as a real defect, and sequence alone
+  can't tell these apart. Verified against the full real population: 8 of 21
+  odd-cysteine candidates now land GO/CONDITIONAL instead of an automatic
+  reject. Real pairing confirmation (which Cys bonds to which) is still
+  deferred to a future Tier 2 structure check — this only stops the sequence
+  check from acting as an unconditional rule in the meantime.
 - **Immunogenicity is not scored.** IEDB's MHC-II API host
   (`tools-cluster-interface.iedb.org`) is not on this environment's network
   allowlist. The check degrades gracefully (returns `available=False`, no
