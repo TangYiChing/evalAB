@@ -106,10 +106,24 @@ class TestChecks:
 
 
 class TestFusion:
-    def test_clean_pair_is_not_no_go_on_hard_gates(self):
+    def test_clean_pair_is_not_hard_gated(self):
+        """The reference pair must be SOFT-scored, never hard-gated.
+
+        Asserts the hard-gate property directly rather than a verdict, which
+        would couple this test to wherever T_LOW/T_HIGH happen to sit. It did
+        once: the Step 7 recalibration moved T_HIGH from 40.0 to 38.31 and
+        this pair scores 39.92, so a verdict assertion started failing on a
+        threshold change that has nothing to do with hard gates.
+
+        The pair landing in the worst decile is not a bug. It carries several
+        CDR deamidation motifs, and (see the package README) it is not a
+        verified match to any approved drug — a structurally valid human
+        framework test pair, nothing more.
+        """
         result = screen_candidate("test", VH_REF, VL_REF, run_immunogenicity=False)
-        assert result.verdict in ("GO", "CONDITIONAL")
         assert result.error is None
+        assert result.score != float("inf"), "score is inf only when hard-gated"
+        assert not [f for f in result.all_flags if f.severity == "hard_gate"]
 
     def test_broken_cysteine_pair_is_no_go_but_via_score_not_hard_gate(self):
         broken_vh = VH_REF.replace("GFNIKDTY", "GFNIKDTC")

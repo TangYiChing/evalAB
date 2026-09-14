@@ -16,28 +16,43 @@ from .checks import Flag, run_all_checks
 from .immunogenicity import check_immunogenicity
 from .numbering import NumberingError, number_antibody
 
-# Calibrated against 508 real, structurally-solved antibodies from the
-# ANTIPASTI-curated SAbDab dataset (see data/sabdab_derived_candidates.json
-# and sabdab_source.py) — RCSB/SAbDab/TheraSAbDab were all unreachable from
-# the build environment, so this dataset (GitHub-hosted, derived from real
-# PDB structures) stood in for the originally planned TheraSAbDab set.
+# Calibrated against 300 human-framework antibodies drawn from PLAbDab:
+# 150 clinical-stage therapeutics (pairing == "TheraSAbDab") and 150
+# patent-text entries. Full run and analysis in
+# docs/calibration-step7-results.md; reproduce with
+# `python -m antibody_prescreen.calibration.run_calibration`.
 #
-# This is a real improvement over the original 3-candidate placeholder, but
-# it is NOT the same thing as the plan's original Stage D: this population
-# is "antibodies that were solvable/crystallizable" (a structural-biology
-# selection), not "antibodies with known real-world clinical/manufacturing
-# outcomes." A structure existing says nothing about developability,
-# immunogenicity in patients, or manufacturing success — cross-referencing
-# against literature-documented liabilities (the original Stage D ask) is
-# still outstanding.
+# Thresholds are PERCENTILE PLACEMENTS on the therapeutic population, not a
+# fitted classifier boundary: T_LOW at its median (half of a clinical-grade
+# population passes) and T_HIGH at its p90 (the worst tenth is rejected).
+# That makes the scale mean something specific — "where does this candidate
+# sit against antibodies that reached the clinic" — which the previous
+# 508-structure SAbDab basis could not, being selected for crystallisability.
 #
-# Score distribution across 466 non-hard-gated candidates: min=15.59,
-# median=31.17, p90=39.72, max=50.91. Thresholds set at the median (roughly
-# half of a real antibody population lands GO) and the 90th percentile
-# (worst ~10% lands NO-GO), rather than the earlier placeholder values which
-# put effectively 100% of real structures below GO.
-T_LOW = 31.0
-T_HIGH = 40.0
+# What this does NOT mean, and the number to keep in view: the score barely
+# separates the two populations. Measured AUC (probability a random
+# patent-text antibody scores worse than a random therapeutic):
+#
+#   tier 1 only                  0.578
+#   tier 1 + TAP                 0.587   (permutation p = 0.005)
+#   tier 1 + TAP + immunogenicity 0.557  <- worse; immunogenicity is now
+#                                           report-only, weight 0
+#
+# 0.587 is statistically real and practically weak. Treat the score as a
+# triage ORDERING, not a classifier. The one clean categorical signal found:
+# 0/150 therapeutics carry any TAP RED flag versus 5/145 patent-text
+# (Fisher exact p = 0.028) — low sensitivity, but no approved-stage antibody
+# in this sample tripped one.
+#
+# The honest limit is the label. "Reached the clinic" versus "was patented"
+# is provenance, not an assay, and most patented antibodies are real programs
+# rather than developability failures. A stronger threshold needs a
+# population with measured outcomes.
+#
+# These values happen to sit close to the previous SAbDab-derived 31.0/40.0.
+# The numbers moved little; what changed is what they are anchored to.
+T_LOW = 29.41
+T_HIGH = 38.31
 
 
 @dataclass

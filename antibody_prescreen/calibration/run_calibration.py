@@ -21,7 +21,7 @@ keep them.
 import argparse
 import csv
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import BrokenExecutor, ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from ..fusion import screen_candidate
@@ -166,9 +166,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--n-per-group", type=int, default=150)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--workers", type=int, default=5)
+    # 3 rather than 5: each worker holds torch + ABodyBuilder2 weights +
+    # OpenMM, and five of those exhausted a 16GB machine mid-run.
+    parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--out", type=Path, default=Path("calibration_results.csv"))
     parser.add_argument("--include-non-human", action="store_true")
+    parser.add_argument(
+        "--resume", action="store_true",
+        help="skip candidates already present in --out (default off so a fresh "
+             "run does not silently mix results from different code versions)",
+    )
+    parser.add_argument(
+        "--max-attempts", type=int, default=4,
+        help="how many times to rebuild the pool after a worker dies",
+    )
     parser.add_argument(
         "--model-cache",
         default=str(Path.home() / ".cache" / "evalab" / "model_cache"),
@@ -177,24 +188,70 @@ def main() -> None:
 
     print("Building population...", file=sys.stderr)
     population = build_population(args.n_per_group, args.seed, args.include_non_human)
-    print(f"Scoring {len(population)} candidates on {args.workers} workers...", file=sys.stderr)
 
-    rows = []
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        futures = {
-            pool.submit(score_one, candidate, args.model_cache): candidate
-            for candidate in population
-        }
-        for i, future in enumerate(as_completed(futures), 1):
-            rows.append(future.result())
-            if i % 10 == 0 or i == len(population):
-                print(f"  {i}/{len(population)}", file=sys.stderr, flush=True)
+    # Resume support, and the reason it exists: a 300-candidate run holds
+    # torch + ABodyBuilder2 weights + OpenMM in every worker, and on a 16GB
+    # machine five of those is enough to get one killed. The first attempt at
+    # this reached 200/300 and then died with BrokenProcessPool, losing
+    # everything because results were only written at the end. Rows are now
+    # flushed as they complete and finished candidates are skipped on restart.
+    done: set[str] = set()
+    if args.out.exists() and args.resume:
+        with open(args.out, newline="") as handle:
+            done = {row["candidate_id"] for row in csv.DictReader(handle)}
+        print(f"Resuming: {len(done)} already scored", file=sys.stderr)
 
-    with open(args.out, "w", newline="") as handle:
+    remaining = [c for c in population if c["candidate_id"] not in done]
+    print(
+        f"Scoring {len(remaining)} candidates on {args.workers} workers...",
+        file=sys.stderr,
+    )
+
+    write_header = not (args.out.exists() and done)
+    with open(args.out, "a" if done else "w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)
-        writer.writeheader()
-        writer.writerows(rows)
-    print(f"Wrote {len(rows)} rows to {args.out}", file=sys.stderr)
+        if write_header:
+            writer.writeheader()
+            handle.flush()
+
+        completed = len(done)
+        # A dead pool kills its pending futures, not the work itself — rebuild
+        # and carry on with whatever is left rather than discarding the run.
+        for attempt in range(1, args.max_attempts + 1):
+            if not remaining:
+                break
+            if attempt > 1:
+                print(
+                    f"  pool died; attempt {attempt} on {len(remaining)} remaining",
+                    file=sys.stderr,
+                )
+            failed_this_pass = list(remaining)
+            try:
+                with ProcessPoolExecutor(max_workers=args.workers) as pool:
+                    futures = {
+                        pool.submit(score_one, candidate, args.model_cache): candidate
+                        for candidate in remaining
+                    }
+                    for future in as_completed(futures):
+                        candidate = futures[future]
+                        row = future.result()
+                        writer.writerow(row)
+                        handle.flush()  # survive the next crash
+                        failed_this_pass.remove(candidate)
+                        completed += 1
+                        if completed % 10 == 0:
+                            print(f"  {completed}/{len(population)}", file=sys.stderr, flush=True)
+            except (BrokenExecutor, OSError) as e:
+                print(f"  pool failure: {type(e).__name__}: {e}", file=sys.stderr)
+            remaining = failed_this_pass
+
+    if remaining:
+        print(
+            f"WARNING: {len(remaining)} candidates never completed after "
+            f"{args.max_attempts} attempts — rerun with --resume to retry them.",
+            file=sys.stderr,
+        )
+    print(f"Wrote results to {args.out}", file=sys.stderr)
 
 
 if __name__ == "__main__":

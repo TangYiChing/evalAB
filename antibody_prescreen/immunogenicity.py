@@ -63,6 +63,8 @@ re-runs the same batch repeatedly.
 
 import hashlib
 import json
+import random
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -96,19 +98,53 @@ WINDOW_SIZE = 15
 # < 2.0 is the field's conventional "likely binder" cutoff.
 BINDER_PERCENTILE_CUTOFF = 2.0
 
-# Weights for a NON-GERMLINE predicted binder. Germline-core binders are
-# dropped entirely before weighting, so these only ever apply to peptides
-# tolerance does not cover.
+# Weights for a NON-GERMLINE predicted binder.
 #
-# PROVISIONAL, like the TAP weights — not fitted against outcomes.
-CDR_BINDER_WEIGHT = 5.0
-FRAMEWORK_BINDER_WEIGHT = 2.0
-# An observed positive T-cell assay is evidence, not prediction, so it is
-# weighted separately and reported separately. It is still not a verdict: the
-# record may come from a vaccine study or an unrelated donor context.
-OBSERVED_EPITOPE_WEIGHT = 3.0
+# ZERO. This check is REPORT-ONLY: its flags are produced, carry their full
+# detail, and are visible in all_flags — but they contribute nothing to the
+# fused score.
+#
+# That is a calibration result, not an oversight. Scored across 300 human-
+# framework PLAbDab antibodies (150 clinical-stage therapeutics vs 150
+# patent-text entries):
+#
+#   immunogenicity weight        AUC = 0.500   (chance, +/-0.047 noise floor)
+#   mean non-germline CDR binders: 1.93 therapeutic vs 1.94 background
+#
+# and including it actively degraded the combined score:
+#
+#   tier1 + tap                  AUC = 0.587
+#   tier1 + tap + immunogenicity AUC = 0.557
+#
+# The reading: after the germline correction, what remains is predicted
+# MHC-II binding in CDRs — and CDR binders are about equally common in
+# antibodies that reached the clinic and antibodies that did not. Which is
+# not surprising. Clinical antibodies are not selected against *predicted*
+# epitopes, and real ADA rates depend on dose, route, duration and patient
+# HLA, none of which a sequence scan sees.
+#
+# So the flags stay (a specific CDR epitope is worth a human's attention, and
+# the observed-evidence layer is worth more) and the arithmetic goes away
+# until there is a label that shows it predicting something.
+#
+# Do NOT raise these to "make the check count" without a population that
+# demonstrates discrimination. See docs/calibration-step7-results.md.
+CDR_BINDER_WEIGHT = 0.0
+FRAMEWORK_BINDER_WEIGHT = 0.0
+OBSERVED_EPITOPE_WEIGHT = 0.0
 
 HTTP_TIMEOUT = 120
+
+# IEDB throttles under concurrent load, and it fails in a way that is easy to
+# mistake for a property of the data. A 300-candidate calibration run with 3
+# parallel workers lost immunogenicity for 95 candidates — and because the
+# populations were scored in order, the losses were 0% in the group that ran
+# first and 63% in the group that ran second. Retrying those same sequences
+# afterwards succeeded immediately. A transient failure that correlates with
+# scoring order is worse than a random one: it silently biases exactly the
+# comparison a calibration run exists to make.
+HTTP_ATTEMPTS = 4
+HTTP_BACKOFF_BASE = 2.0
 
 
 @dataclass
@@ -139,6 +175,24 @@ class ImmunogenicityResult:
 
 
 # --- IEDB prediction ------------------------------------------------------
+
+
+def _fetch_with_retry(url: str, data: bytes | None = None) -> str | None:
+    """GET/POST with exponential backoff. Returns None once attempts run out.
+
+    Jittered so parallel workers that were throttled together do not all come
+    back at the same instant and throttle each other again.
+    """
+    for attempt in range(HTTP_ATTEMPTS):
+        try:
+            request = urllib.request.Request(url, data=data)
+            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+                return response.read().decode()
+        except (urllib.error.URLError, TimeoutError, OSError):
+            if attempt == HTTP_ATTEMPTS - 1:
+                return None
+            time.sleep(HTTP_BACKOFF_BASE**attempt + random.uniform(0, 1))
+    return None
 
 
 def _cache_path(kind: str, key: str, cache_dir: Path | None) -> Path:
@@ -176,20 +230,26 @@ def predict_mhcii(
     if cache_file.exists() and cache_file.stat().st_size > 0:
         text = cache_file.read_text()
     else:
-        try:
-            request = urllib.request.Request(IEDB_MHCII_URL, data=body)
-            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
-                text = response.read().decode()
-        except (urllib.error.URLError, TimeoutError, OSError):
+        text = _fetch_with_retry(IEDB_MHCII_URL, data=body)
+        if text is None:
             return None
-        cache_file.write_text(text)
 
     lines = [line for line in text.strip().splitlines() if line.strip()]
     if len(lines) < 2:
         return None
     header = lines[0].split("\t")
     if "rank" not in header:
+        # IEDB answers a rejected sequence (an 'X'/'B'/'Z' ambiguous residue,
+        # say) with a 200 and a plain-text complaint. Cache it anyway: it is a
+        # real, reproducible answer about this sequence, not a transient
+        # failure, and re-asking will not change it.
+        cache_file.write_text(text)
         return None
+
+    # Only cache once the response has been validated. Caching before this
+    # point would freeze a transient error page into the cache permanently.
+    if not cache_file.exists():
+        cache_file.write_text(text)
 
     rows = []
     for line in lines[1:]:
@@ -234,19 +294,18 @@ def observed_tcell_records(
     if cache_file.exists() and cache_file.stat().st_size > 0:
         text = cache_file.read_text()
     else:
-        try:
-            with urllib.request.urlopen(
-                f"{IEDB_IQ_TCELL_URL}?{query}", timeout=HTTP_TIMEOUT
-            ) as response:
-                text = response.read().decode()
-        except (urllib.error.URLError, TimeoutError, OSError):
+        text = _fetch_with_retry(f"{IEDB_IQ_TCELL_URL}?{query}")
+        if text is None:
             return None
-        cache_file.write_text(text)
 
     try:
-        return json.loads(text)
+        records = json.loads(text)
     except json.JSONDecodeError:
         return None
+
+    if not cache_file.exists():
+        cache_file.write_text(text)
+    return records
 
 
 # --- the check itself -----------------------------------------------------

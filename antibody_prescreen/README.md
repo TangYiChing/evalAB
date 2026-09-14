@@ -1,23 +1,27 @@
 # Antibody Pre-Screening (Tier 1 + Tier 2) — Prototype
 
-**Status: prototype. Neither tier's fusion weights are calibrated against
-known clinical/manufacturing outcomes.**
+**Status: prototype. Calibrated against a clinical-grade population, but the
+score is a triage ORDERING, not a classifier** — measured AUC 0.587 for
+separating clinical-stage therapeutics from patent-text antibodies. See
+`docs/calibration-step7-results.md`.
 
-- **Tier 1 thresholds** (`T_LOW=31`, `T_HIGH=40` in `fusion.py`) are set from
-  the score distribution of 508 real, structurally-solved antibodies (see
-  "Data source" below) — a real improvement over an earlier 3-candidate
-  placeholder pass, but that population is selected for "a structure was
-  solved," not "known good or bad in the clinic/manufacturing."
-- **Immunogenicity now runs and discriminates**, but its weights are also
-  placeholders and are currently decisive enough to push a clinical-stage
-  therapeutic to NO-GO. Read its flags, not the fused score.
-- **Tier 2 (TAP) flag regions are calibrated** — they come from Raybould et
-  al.'s therapeutic-antibody population. But the **weights that feed those
-  flags into the fused score are placeholders**, so the combined number is
-  not yet a calibrated go/no-go signal. Read the TAP flags directly.
+- **Thresholds** (`T_LOW=29.41`, `T_HIGH=38.31` in `fusion.py`) are percentile
+  placements — median and p90 — on 150 clinical-stage therapeutics from
+  PLAbDab. The scale now means "where does this sit against antibodies that
+  reached the clinic", replacing an earlier basis of "antibodies someone
+  crystallised".
+- **Immunogenicity is report-only (weight 0).** It runs, and the germline
+  correction makes its flags meaningful, but calibration measured AUC 0.500 —
+  exactly chance — and including it made the combined score *worse*
+  (0.587 -> 0.557). Flags are reported in full; they do not move the score.
+- **TAP flag regions are calibrated** (Raybould et al.) and contribute a
+  small, statistically real improvement (AUC 0.578 -> 0.587, permutation
+  p = 0.005). The cleanest single result in the whole calibration:
+  **0 of 150 clinical-stage therapeutics carry any TAP RED flag, versus 5 of
+  145 patent-text antibodies** (Fisher exact p = 0.028).
 
-See "What's not done" below before using this on real candidates for a real
-go/no-go decision.
+Read the flags, especially any TAP red, rather than the number. See
+"What's not done" below before using this for a real go/no-go decision.
 
 ## What this is
 
@@ -431,21 +435,33 @@ Overlapping cores are clustered into one flag per liable region. Without
 that, one stretch produces several shifted cores (`LLISAASSL`, `LISAASSLQ`,
 `ISAASSLQS` — measured on a real candidate) and gets weighted three times.
 
-### The weights are provisional and currently decisive
+### This check is report-only: weight 0
 
-`CDR_BINDER_WEIGHT = 5.0`, `FRAMEWORK_BINDER_WEIGHT = 2.0`,
-`OBSERVED_EPITOPE_WEIGHT = 3.0` are **not fitted**. Measured effect of
-turning both new tiers on, across 10 PLAbDab candidates:
+All three weights are **0.0**. Flags are produced with full detail and appear
+in `all_flags`; they contribute nothing to the fused score.
 
-| Source | Tier 1 verdicts | With TAP + immunogenicity |
-|---|---|---|
-| TheraSAbDab (5) | 3 GO, 2 CONDITIONAL | 1 GO, 3 CONDITIONAL, **1 NO-GO** |
-| Patent text (5) | 4 GO, 1 NO-GO | 2 CONDITIONAL, 3 NO-GO |
+That is a calibration result, not an oversight. Across 300 human-framework
+PLAbDab antibodies (150 clinical-stage therapeutics vs 150 patent-text):
 
-There is real separation between the two populations, but a clinical-stage
-therapeutic still lands NO-GO. **Do not use the fused score as a go/no-go
-number with these tiers enabled** — read the flags. Calibration is
-`docs/tier2-tap-plabdab-plan.md` Step 7 and has not been run.
+| | therapeutic | background | AUC |
+|---|---|---|---|
+| immunogenicity weight | median 10.00 | median 10.00 | **0.500** |
+| non-germline CDR binders (mean) | 1.93 | 1.94 | 0.505 |
+| observed T-cell matches (mean) | 0.03 | 0.05 | 0.510 |
+
+And including it made the combined score worse: tier 1 + TAP scores AUC
+0.587, tier 1 + TAP + immunogenicity scores 0.557.
+
+The reading: after the germline correction what remains is predicted MHC-II
+binding in CDRs, and that is about equally common in antibodies that reached
+the clinic and ones that did not. Clinical antibodies are not selected
+against *predicted* epitopes, and real ADA rates depend on dose, route,
+duration and patient HLA — none of which a sequence scan sees.
+
+The flags still earn their place: a specific CDR epitope with published
+positive T-cell assay records is worth a human's attention. The arithmetic
+does not. **Do not raise these weights without a population that shows them
+predicting something.** See `docs/calibration-step7-results.md`.
 
 ## V-domain integrity (and why "productivity" is not checkable here)
 
@@ -509,10 +525,16 @@ amino acid input.
 - ~~Tier 2 (structure-based checks).~~ **Done**: ABodyBuilder2 → TAP profile,
   opt-in via `run_structure=True`. See "Tier 2" above — but note the weights
   feeding it into the fused score are still provisional.
-- **Tier 2 thresholds are not calibrated.** The skeleton runs end to end and
-  is tested, but no calibration sweep has been run. The plan for it is
-  `docs/tier2-tap-plabdab-plan.md` Step 7; the required data source is built
-  (`calibration/plabdab_source.py`) and unused.
+- ~~Tier 2 thresholds are not calibrated.~~ **Done**: 300 human-framework
+  PLAbDab antibodies scored, thresholds re-anchored, immunogenicity demoted to
+  report-only. Results in `docs/calibration-step7-results.md`.
+- **The calibration label is provenance, not an assay.** "Reached the clinic"
+  is not "manufacturable" and "was patented" is not "bad" — most patented
+  antibodies are real programs, not failures. That puts a ceiling on the
+  measurable separation, and AUC 0.587 is consistent with hitting that ceiling
+  rather than with the checks being uninformative. A stronger calibration
+  needs measured outcomes (developability assays, manufacturing results,
+  clinical ADA rates), which PLAbDab does not contain.
 - **Disulfide pairing is still not checked**, even though a structure is now
   available. The cysteine note below promises this as "a future Tier 2
   structure check" — Tier 2 now exists, and this specific check still does

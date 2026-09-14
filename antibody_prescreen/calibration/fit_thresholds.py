@@ -75,6 +75,29 @@ def auc(therapeutic, background):
     return (wins + 0.5 * ties) / total if total else None
 
 
+def interpret_auc(value: float, n_t: int, n_b: int) -> str:
+    """Plain-language reading of an AUC, with an honest noise floor.
+
+    AUC is a ranking statistic on small samples, so a value near 0.5 says
+    nothing and a value slightly above it says almost nothing. The rough
+    standard error of AUC under the null is ~sqrt(1/(12*n)) with n the smaller
+    group; anything inside ~2 SE of 0.5 is reported as noise rather than
+    dressed up as a weak signal.
+    """
+    n = max(1, min(n_t, n_b))
+    noise = 2 * (1.0 / (12 * n)) ** 0.5
+    delta = value - 0.5
+    if abs(delta) < noise:
+        return f"indistinguishable from chance (+/-{noise:.3f} noise floor at n={n})"
+    if delta < 0:
+        return "INVERTED — background scores LOWER than therapeutics"
+    if delta < 0.10:
+        return "weak separation"
+    if delta < 0.20:
+        return "moderate separation"
+    return "strong separation"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("csv_path", type=Path)
@@ -102,11 +125,7 @@ def main() -> None:
         print(describe("background", b))
         a = auc(t, b)
         if a is not None:
-            verdict = (
-                "no information" if abs(a - 0.5) < 0.03
-                else ("discriminates" if a > 0.5 else "INVERTED — background scores LOWER")
-            )
-            print(f"  AUC(background > therapeutic) = {a:.3f}  -> {verdict}")
+            print(f"  AUC(background > therapeutic) = {a:.3f}  -> {interpret_auc(a, len(t), len(b))}")
 
     print("\n=== Where would thresholds land? ===")
     total_t, total_b = _floats(therapeutic, "total_score"), _floats(background, "total_score")
