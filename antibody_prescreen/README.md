@@ -8,6 +8,9 @@ known clinical/manufacturing outcomes.**
   "Data source" below) — a real improvement over an earlier 3-candidate
   placeholder pass, but that population is selected for "a structure was
   solved," not "known good or bad in the clinic/manufacturing."
+- **Immunogenicity now runs and discriminates**, but its weights are also
+  placeholders and are currently decisive enough to push a clinical-stage
+  therapeutic to NO-GO. Read its flags, not the fused score.
 - **Tier 2 (TAP) flag regions are calibrated** — they come from Raybould et
   al.'s therapeutic-antibody population. But the **weights that feed those
   flags into the fused score are placeholders**, so the combined number is
@@ -101,9 +104,10 @@ For per-candidate detail beyond the summary line, inspect `result.all_flags`
 | Module | Does |
 |---|---|
 | `numbering.py` | IMGT numbering + CDR/framework region assignment, via ANARCI |
-| `checks.py` | Sequence sanity, cysteine pairing, N-glycosylation, PTM liability (deamidation/isomerization/oxidation) |
+| `checks.py` | Sequence sanity, cysteine pairing, N-glycosylation, PTM liability (deamidation/isomerization/oxidation), V-domain integrity |
 | `developability.py` | Aggregation propensity (AGGRESCAN, ported from ToolUniverse's antibody-engineering skill) + pI |
-| `immunogenicity.py` | Own-sequence MHC-II binding scan (IEDB API) — **not scored in this environment**, see below |
+| `immunogenicity.py` | Non-germline MHC-II binder scan (IEDB prediction + IEDB observed-epitope evidence) |
+| `germline.py` | Per-residue germline / mutated / junctional classification, from ANARCI's own germline tables |
 | `fusion.py` | Combines everything into one verdict + score + top reasons |
 | `structure/modelling.py` | **Tier 2**: ABodyBuilder2 (ImmuneBuilder) VH/VL → IMGT-numbered Fv model, disk-cached |
 | `structure/tap_runner.py` | **Tier 2**: TAP 5-metric profile → weighted soft flags |
@@ -147,17 +151,26 @@ dependencies are imported lazily, so a Tier-1-only install still works.
 ## Running the tests
 
 ```bash
-python -m pytest tests/ -v              # all 25
-python -m pytest tests/ -m "not slow"   # 21 fast tests, ~1.5s
-python -m pytest tests/ -m slow         # 4 Tier 2 integration tests, ~18s
+python -m pytest tests/ -v                          # all 39
+python -m pytest tests/ -m "not slow and not network"   # 31 offline, ~2s
+python -m pytest tests/ -m slow                     # 4 Tier 2 model builds, ~18s
+python -m pytest tests/ -m network                  # 4 live IEDB, ~12s
 ```
 
-**25 tests, all passing as of this build.**
+**39 tests, all passing as of this build.**
 
 Tier 1 (15): numbering correctness, each individual check (verified via
 targeted mutation — inject a liability, assert it's caught), and end-to-end
 fusion routing (clean/broken/garbage candidates, plus a regression fixture
 asserting score ordering).
+
+Immunogenicity (8, in `tests/test_immunogenicity.py`): germline assignment
+and the three residue states, the FR3 core recognised as self, the grafted
+epitope core recognised as non-self, V-domain anchor breakage and truncation,
+plus four `network` tests running the real IEDB endpoints — the negative
+control (clean antibody, 8 binders predicted, 8 dropped, 0 flags), the
+positive control (grafted flu epitope survives), evidence reported
+separately, and graceful degradation when the API is unreachable.
 
 Tier 2 (10, in `tests/test_structure.py`): flag mapping and weighting, cache
 keying, graceful degradation when ImmuneBuilder is missing or modelling
@@ -304,6 +317,145 @@ label, not an assay. It is a better signal than "a crystal structure exists"
 — which is what `T_LOW`/`T_HIGH` are currently fitted to — and it is still
 not experimental ground truth.
 
+## Immunogenicity: the germline correction
+
+`run_immunogenicity=True` asks whether the antibody will be seen as foreign
+and destroyed by anti-drug antibodies (ADA). The chain of events:
+
+```
+APC engulfs the drug -> chops it into ~15-mers -> presents them on MHC-II
+-> a CD4+ T cell recognises one -> B cells make ADA -> the drug is cleared
+```
+
+This sits next to the developability checks because it is another way the
+molecule dies before it helps anyone — and the two are mechanistically
+linked, not merely adjacent: aggregates are taken up by APCs far more
+efficiently than monomer, so a high Tier 2 hydrophobic patch score feeds
+straight into step 1.
+
+### Why a raw MHC-II scan does not work
+
+MHC-II binding is necessary, not sufficient. Between presentation and a
+T-cell response sits **central tolerance** — T cells reactive to self peptides
+are deleted in the thymus, so a germline framework peptide can be presented
+beautifully and provoke nothing.
+
+IEDB cannot supply that. Measured on the reference VH:
+
+| | |
+|---|---|
+| Strong predicted binders (rank < 2.0) | 8 |
+| ...overlapping a CDR | **0** |
+| ...in framework | **8** |
+
+The strongest carries `YLQMNSLRAEDT`, the IGHV3 FR3 germline motif — present
+in **24.6%** of PLAbDab's 176,894 heavy chains and **34.1%** of its 1,198
+clinical-stage therapeutics. Flagging it does not distinguish a risky
+candidate from an approved drug.
+
+### The filter works on the 9-mer core, not the 15-mer window
+
+MHC-II binding is decided by a 9-residue core sitting in the groove; the
+flanks hang outside it. The API reports that core in `core_peptide`.
+
+| Filter | False positives surviving |
+|---|---|
+| window-level (any mutation in the 15-mer) | **8 / 8** — useless |
+| **core-level** (any mutation in the 9-mer core) | **0 / 8** — correct |
+
+All 8 shared the identical, fully germline core `YLQMNSLRA`; each window
+merely happened to contain one mutated flanking residue.
+
+**Positive control** (a filter that drops everything would pass the negative
+test): grafting influenza HA306-318 into CDR-H3 gives 15 strong binders — the
+8 germline framework ones are dropped, and all 7 windows of the grafted
+epitope (core `YVKQNTLKL`) are kept.
+
+Germline reference comes from ANARCI's own tables (249 human IGHV alleles,
+IMGT-position-aligned), so this needs no new data source, no nucleotide
+round-trip, and no web service. Three residue states, not two:
+
+| State | Meaning | Tolerance |
+|---|---|---|
+| germline | matches the assigned V gene | covered |
+| mutated | differs from it | **not covered** |
+| beyond V | V-D-J junction, no germline exists | **not covered** |
+
+Note that CDR3 is only *partly* junctional: IMGT 105-106 (the C-A-R stem) is
+V-gene encoded; 107 onward is junction.
+
+### Two layers, reported separately
+
+| Flag | Source | Claim |
+|---|---|---|
+| `immunogenicity` | IEDB prediction API | this peptide *might* bind MHC-II |
+| `immunogenicity_observed` | IEDB IQ-API | this peptide *was observed* to provoke a T-cell response |
+
+They are never summed into one number. The germline filter runs before
+**both**: `YLQMNSLRA` has 16 positive human T-cell assay records in IEDB, so
+the evidence layer false-positives on germline exactly as the predictor does.
+An observed positive record is evidence, not a verdict — the study context
+may be unrelated to therapeutic use.
+
+### Network and performance
+
+Both endpoints are live and used over **https** (the http URLs 308-redirect
+and `urllib` will not re-POST — that, not a firewall, is why this check used
+to report itself unavailable). Responses are cached to
+`~/.cache/evalab/iedb`.
+
+The whole chain goes in **one** POST with a comma-separated allele list: a
+120-residue VH against 5 alleles returns 530 rows in ~3s. Evidence lookups
+are ~0.8s each and run only on peptides that survived the filter.
+
+Overlapping cores are clustered into one flag per liable region. Without
+that, one stretch produces several shifted cores (`LLISAASSL`, `LISAASSLQ`,
+`ISAASSLQS` — measured on a real candidate) and gets weighted three times.
+
+### The weights are provisional and currently decisive
+
+`CDR_BINDER_WEIGHT = 5.0`, `FRAMEWORK_BINDER_WEIGHT = 2.0`,
+`OBSERVED_EPITOPE_WEIGHT = 3.0` are **not fitted**. Measured effect of
+turning both new tiers on, across 10 PLAbDab candidates:
+
+| Source | Tier 1 verdicts | With TAP + immunogenicity |
+|---|---|---|
+| TheraSAbDab (5) | 3 GO, 2 CONDITIONAL | 1 GO, 3 CONDITIONAL, **1 NO-GO** |
+| Patent text (5) | 4 GO, 1 NO-GO | 2 CONDITIONAL, 3 NO-GO |
+
+There is real separation between the two populations, but a clinical-stage
+therapeutic still lands NO-GO. **Do not use the fused score as a go/no-go
+number with these tiers enabled** — read the flags. Calibration is
+`docs/tier2-tap-plabdab-plan.md` Step 7 and has not been run.
+
+## V-domain integrity (and why "productivity" is not checkable here)
+
+`check_v_domain_integrity` verifies the conserved IMGT anchors that hold the
+immunoglobulin fold together:
+
+| IMGT position | Expected | Role |
+|---|---|---|
+| 23 | C | 1st-CYS, intradomain disulfide |
+| 41 | W | CONSERVED-TRP, packs the hydrophobic core |
+| 104 | C | 2nd-CYS, other half of the disulfide |
+| 118 | F or W | J-PHE/J-TRP, marks a complete V domain |
+
+Measured on 400 random PLAbDab pairs: **16 (4%) fail** — mostly truncation
+before position 118, plus genuine substitutions (C23→S, W41→R, C104 missing).
+ANARCI numbers all 400 without complaint, so it does not catch these alone.
+All are soft flags, per the odd-cysteine precedent.
+
+**This is not IMGT/V-QUEST productivity, and that check cannot be performed
+on this input.** V-QUEST's definition — in-frame, no premature stop codon —
+is a property of a *nucleotide* sequence. This pipeline takes amino acids,
+and reverse-translating them first (as the V-QUEST tutorial workflow does)
+makes the question tautological: no amino acid maps to a stop codon, and
+every indel is a whole codon, so the result is in-frame and stop-free by
+construction. Confirmed: **zero** of PLAbDab's 176,894 heavy chains contain
+a `*`. If real sequencing-derived nucleotide data ever enters the pipeline,
+V-QUEST productivity becomes meaningful again — it is not meaningful for
+amino acid input.
+
 ## What's not done
 
 - **Literature cross-referencing for calibration.** See "Data source" above —
@@ -321,12 +473,18 @@ not experimental ground truth.
   reject. Real pairing confirmation (which Cys bonds to which) is still
   deferred to a future Tier 2 structure check — this only stops the sequence
   check from acting as an unconditional rule in the meantime.
-- **Immunogenicity is not scored.** IEDB's MHC-II API host
-  (`tools-cluster-interface.iedb.org`) is not on this environment's network
-  allowlist. The check degrades gracefully (returns `available=False`, no
-  crash) rather than silently skipping — but no candidate in this build has
-  actually been scored for immunogenicity. Allowlist that host, or wire in a
-  local NetMHCIIpan install, before relying on this signal.
+- ~~Immunogenicity is not scored.~~ **Done**: IEDB is reachable over https,
+  the check runs, and the germline correction makes it discriminate. But see
+  "The weights are provisional and currently decisive" above — the signal is
+  real and the weighting is not calibrated.
+- **Immunogenicity uses a 5-allele HLA-DR panel.** That is a starting point,
+  not population coverage, and it is a real parameter of the check rather
+  than an incidental constant. No DQ/DP alleles are scanned at all.
+- **The local standalone predictor is not wired in.** `IEDB_MHC_II-3.0.1`
+  (515 MB) is Linux-x86_64-only, so it cannot run on Apple Silicon even under
+  Rosetta 2, and it bundles NetMHCIIpan 3.2 against the API's 4.x. It is the
+  right choice on the remote Linux box (Step R), not here. See
+  `docs/iedb-immunogenicity-evaluation.md`.
 - **Germline precedent check** (IMGT/TheraSAbDab lookup, bonus signal in the
   original design) — not built today.
 - ~~Tier 2 (structure-based checks).~~ **Done**: ABodyBuilder2 → TAP profile,
