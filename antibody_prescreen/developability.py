@@ -64,6 +64,19 @@ def aggrescan_hot_spots(seq: str) -> list[dict]:
     ]
 
 
+def aggrescan_na4vss(seq: str) -> float:
+    """Aggregate aggregation score (Na4vSS): mean of (a4v - threshold) clipped
+    at 0, averaged over the whole sequence. This is the metric AGGRESCAN
+    itself uses for whole-protein comparison — almost every real protein has
+    a handful of individual hot spots (that's normal, not a defect), so
+    per-hot-spot counting is the wrong signal. The aggregate magnitude,
+    compared against other candidates in the same batch, is the right one.
+    """
+    a3v = [A3V.get(aa, 0.0) for aa in seq]
+    a4v = _window(a3v, 5)
+    return round(sum(max(0.0, v - HOT_SPOT_THRESHOLD) for v in a4v) / len(a4v), 4)
+
+
 def isoelectric_point(seq: str) -> float:
     counts = {aa: seq.count(aa) for aa in set(seq)}
 
@@ -95,19 +108,45 @@ def check_developability(chain: NumberedChain, chain_name: str) -> list[Flag]:
 
     flags: list[Flag] = []
 
-    for spot in aggrescan_hot_spots(seq):
+    hot_spots = aggrescan_hot_spots(seq)
+    na4vss = aggrescan_na4vss(seq)
+    cdr_overlapping_spots = []
+    for spot in hot_spots:
         spot_region_residues = residues[spot["start_idx"] : spot["end_idx"] + 1]
-        overlaps_cdr = any(r.is_cdr for r in spot_region_residues)
-        region_label = "/".join(sorted({r.region for r in spot_region_residues}))
+        if any(r.is_cdr for r in spot_region_residues):
+            region_label = "/".join(sorted({r.region for r in spot_region_residues}))
+            cdr_overlapping_spots.append((spot, region_label))
+
+    # Aggregate signal, not per-hot-spot: almost every real antibody has a
+    # handful of individual AGGRESCAN hot spots (normal biology), so the
+    # whole-sequence Na4vSS magnitude is the meaningful comparison, weighted
+    # modestly since this is one signal among several.
+    flags.append(
+        Flag(
+            check="developability",
+            severity="soft",
+            region="chain",
+            weight=na4vss * 15.0,
+            message=(
+                f"{chain_name} aggregate aggregation score (Na4vSS)={na4vss}, "
+                f"{len(hot_spots)} hot spot(s) total, {len(cdr_overlapping_spots)} overlapping a CDR"
+            ),
+        )
+    )
+
+    # Separately and more lightly: flag when a hot spot specifically sits in
+    # a CDR loop, since that's the localized-risk case worth a human's
+    # attention even when the aggregate score is unremarkable.
+    for spot, region_label in cdr_overlapping_spots:
         flags.append(
             Flag(
                 check="developability",
                 severity="soft",
                 region=region_label,
-                weight=6.0 if overlaps_cdr else 2.0,
+                weight=2.0,
                 message=(
-                    f"aggregation hot spot '{spot['peptide']}' ({chain_name} {region_label}, "
-                    f"mean a4v={spot['mean_a4v']}){' — overlaps CDR' if overlaps_cdr else ''}"
+                    f"aggregation hot spot '{spot['peptide']}' overlaps CDR "
+                    f"({chain_name} {region_label}, mean a4v={spot['mean_a4v']})"
                 ),
             )
         )
