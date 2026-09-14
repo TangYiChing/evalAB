@@ -1,9 +1,12 @@
 # Antibody Tier 1 Pre-Screening — Prototype
 
-**Status: prototype, NOT calibrated for production use.** Thresholds
-(`T_LOW=15`, `T_HIGH=40` in `fusion.py`) are provisional, set from a small
-illustrative test set during today's build, not a real Stage D calibration
-against approved therapeutics. See "What's not done" below before using this
+**Status: prototype, calibrated against real structural data but NOT against
+known clinical/manufacturing outcomes.** Thresholds (`T_LOW=31`, `T_HIGH=40`
+in `fusion.py`) are set from the score distribution of 508 real,
+structurally-solved antibodies (see "Data source" below) — a real
+improvement over an earlier 3-candidate placeholder pass, but this
+population is selected for "a structure was solved," not "known good or bad
+in the clinic/manufacturing." See "What's not done" below before using this
 on real candidates for a real go/no-go decision.
 
 ## What this is
@@ -72,17 +75,62 @@ individual check (verified via targeted mutation — inject a liability, assert
 it's caught), and end-to-end fusion routing (clean/broken/garbage candidates,
 plus a regression fixture asserting score ordering).
 
+## Data source
+
+`TheraSAbDab`, `SAbDab`, `RCSB`, and `PDBe` are all unreachable from this
+build environment (network egress allowlist blocks them — confirmed via
+direct `curl` and the ToolUniverse `TheraSAbDab_get_therapeutic_sequences`
+tool's underlying HTTP client, which hits the same block). GitHub
+(`raw.githubusercontent.com`, `github.com`) is reachable.
+
+`kevinmicha/ANTIPASTI` hosts, per PDB entry, a `lists_of_residues/{pdb}.npy`
+array: every residue as an `<amino_acid><chain_letter><position>` token
+(e.g. `'DH  1 '` = Asp at chain H position 1), bounded by `START-Ab`/`END-Ab`
+markers separating the antibody (H+L) block from the antigen chain that
+follows. `sabdab_source.py` parses these against `sabdab_summary_all.tsv`
+(matching a PDB's actual npy chain letters to the correct TSV row, since a
+structure with multiple Fab copies has one npy per copy, not per row) into
+real VH/VL/antigen sequences.
+
+`antibody_prescreen/data/sabdab_derived_candidates.json` is the extracted
+result: 509 candidates with complete heavy, light, and antigen chains.
+Regenerate it with:
+
+```python
+from antibody_prescreen.sabdab_source import load_all_candidates
+candidates = load_all_candidates(
+    "path/to/sabdab_summary_all.tsv",
+    "path/to/ANTIPASTI/data/lists_of_residues",
+)
+```
+
+**Known limitation**: sequences are read off residues actually resolved in
+the crystal structure, so disordered/missing loops are silently absent from
+the extracted sequence — not the same as the true, fully expressed sequence.
+This can produce a spurious flag (e.g. an apparent odd cysteine count if one
+member of a real pair wasn't resolved). One investigated case (`1sy6`) turned
+out to be real biology (a genuine extra CDR-H3 cysteine, not a missing-residue
+artifact), but this hasn't been checked for all 42 hard-gated candidates.
+
+**Selection bias**: this population is "antibodies real enough to solve a
+structure for," not "antibodies with a known real-world developability or
+clinical outcome." The original Stage D ask — cross-reference threshold
+placement against literature-documented liabilities — is still outstanding.
+
 ## What's not done (explicitly out of scope for today)
 
-- **Real Stage D calibration.** Today's thresholds come from a 3-candidate
-  illustrative set built during development, not a curated set of approved
-  therapeutic antibodies cross-referenced against literature. Before trusting
-  this on real candidates: pull 15-30 verified VH/VL sequences from
-  TheraSAbDab/IMGT, run them through the pipeline, and set `T_LOW`/`T_HIGH`
-  so that set lands mostly GO/CONDITIONAL. `RCSB`, `IMGT`, and `TheraSAbDab`
-  were all unreachable from this build environment's network egress
-  allowlist — this has to happen from an environment that can reach them, or
-  with sequences supplied directly rather than fetched.
+- **Literature cross-referencing for calibration.** See "Data source" above —
+  thresholds are now set from a real structural population's score
+  distribution, which is a real step forward from an illustrative 3-candidate
+  set, but still not cross-referenced against documented real-world
+  developability/immunogenicity failures the way the original Stage D plan
+  called for.
+- **Cysteine hard-gate may be too blunt.** An odd cysteine count can be a
+  genuine non-canonical disulfide (real biology, confirmed in one case) as
+  well as a real defect or a missing-residue artifact — sequence alone can't
+  tell these apart. Worth downgrading to a strong soft flag requiring human
+  review rather than an automatic hard gate, once there's a way to
+  distinguish the cases (e.g. structure-based confirmation in Tier 2).
 - **Immunogenicity is not scored.** IEDB's MHC-II API host
   (`tools-cluster-interface.iedb.org`) is not on this environment's network
   allowlist. The check degrades gracefully (returns `available=False`, no
