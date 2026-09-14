@@ -43,6 +43,12 @@ class NumberedChain:
     species: str
     evalue: float
     residues: list[Residue]
+    # Closest germline V gene, from ANARCI's own assignment. None if ANARCI
+    # could not assign one (e.g. an unusual species). Used by the germline
+    # module to decide which residues are self and which are engineered.
+    v_gene: str | None = None
+    v_species: str | None = None
+    v_identity: float | None = None
 
     def region_sequence(self, region: str) -> str:
         return "".join(r.aa for r in self.residues if r.region == region and r.aa != "-")
@@ -83,7 +89,13 @@ def number_chain(sequence: str, expect_chain_type: str | None = None) -> Numbere
     if not sequence or not sequence.isalpha():
         raise NumberingError(f"not a valid amino acid sequence: {sequence!r}")
 
-    _, numbered, alignment_details, _ = run_anarci([("query", sequence)], scheme="imgt")
+    # assign_germline=True makes ANARCI also report the closest germline V/J
+    # gene. It costs one extra alignment inside the same call — cheaper than
+    # running ANARCI twice, and immunogenicity.py needs it to tell a
+    # self/tolerised residue apart from an engineered one.
+    _, numbered, alignment_details, _ = run_anarci(
+        [("query", sequence)], scheme="imgt", assign_germline=True
+    )
 
     domains = numbered[0]
     if not domains:
@@ -124,11 +136,19 @@ def number_chain(sequence: str, expect_chain_type: str | None = None) -> Numbere
             )
         )
 
+    v_gene = v_species = v_identity = None
+    germline_call = (details.get("germlines") or {}).get("v_gene")
+    if germline_call:
+        (v_species, v_gene), v_identity = germline_call
+
     return NumberedChain(
         chain_type=chain_type,
         species=details["species"],
         evalue=details["evalue"],
         residues=residues,
+        v_gene=v_gene,
+        v_species=v_species,
+        v_identity=v_identity,
     )
 
 

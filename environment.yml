@@ -1,0 +1,45 @@
+# Reproducible environment for antibody_prescreen (Tier 1 + Tier 2).
+#
+#   conda env create -f environment.yml
+#   conda activate evalab
+#
+# Tier 1 alone only needs python, hmmer and anarci — but pinning one env for
+# both is simpler than maintaining two, and Tier 2 stays opt-in at runtime
+# (`run_structure=False` is the default).
+#
+# IMPORTANT, Apple Silicon: TAP shells out to a bundled x86_64 `psa` binary
+# (see antibody_prescreen/structure/vendor/VENDOR.md). Install Rosetta 2 once:
+#
+#   softwareupdate --install-rosetta --agree-to-license
+#
+# IMPORTANT, pytorch: install it from conda-forge, NOT pip. The pip wheel
+# ships its own libomp, which collides with the one conda's openmm links
+# against and aborts at import with "OMP: Error #15 ... already initialized".
+#
+# Versions below are what this environment actually resolved to on
+# osx-arm64 (macOS 15/25.x, Apple M5) when Tier 2 was built and tested.
+
+name: evalab
+
+channels:
+  - conda-forge
+  - bioconda
+
+dependencies:
+  - python=3.10          # 3.10.20
+  # --- Tier 1 ---
+  - hmmer=3.4            # ANARCI shells out to hmmscan; must be on PATH
+  # --- Tier 2 ---
+  - biopython=1.88       # TAP structure parsing/annotation
+  - loguru=0.7           # TAP logging
+  - openmm=8.5           # ABodyBuilder2 structure refinement
+  - pdbfixer=1.12
+  - pytorch=2.10         # from conda-forge — see note above
+  - numpy=2.2
+  - pandas=2.3           # PLAbDab calibration tables only
+  # --- tooling ---
+  - pytest
+  - pip
+  - pip:
+      - anarci==2026.2.13.2
+      - ImmuneBuilder==1.2

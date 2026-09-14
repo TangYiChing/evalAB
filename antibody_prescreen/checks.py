@@ -234,11 +234,104 @@ def check_ptm_liability(chain: NumberedChain, chain_name: str) -> list[Flag]:
     return flags
 
 
+# --- V-domain integrity ---------------------------------------------------
+#
+# This is the amino-acid-level answer to "is this a complete, translatable
+# V domain" — the question IMGT/V-QUEST answers under the name "productivity".
+#
+# V-QUEST's own definition (in-frame, no premature stop codon) is a property
+# of a NUCLEOTIDE sequence and cannot be assessed here: this pipeline takes
+# amino acids. Reverse-translating them first, as the V-QUEST tutorial
+# workflow does, makes the question tautological — no amino acid maps to a
+# stop codon, and every indel is a whole codon, so a reverse-translated
+# sequence is in-frame and stop-free by construction. Confirmed empirically:
+# zero of PLAbDab's 176,894 heavy chains contain a '*'. (If real
+# sequencing-derived nucleotide data ever enters the pipeline, V-QUEST
+# productivity becomes a meaningful check again — it is not one for AA input.)
+#
+# What IS meaningful at the amino acid level, and is what actually breaks in
+# practice, is whether the conserved IMGT anchor residues that hold the
+# immunoglobulin fold together are present and correct:
+#
+#   position 23  1st-CYS          forms the intradomain disulfide
+#   position 41  CONSERVED-TRP    packs the hydrophobic core
+#   position 104 2nd-CYS          the other half of that disulfide
+#   position 118 J-PHE or J-TRP   marks the end of a complete V domain
+#
+# Measured on 400 random PLAbDab pairs: 16 (4%) fail this check — mostly
+# truncated before position 118, plus a handful of genuinely substituted
+# anchors (C23->S, W41->R, C104 missing). ANARCI numbers all 400 without
+# complaint, so it does not catch these on its own.
+IMGT_ANCHORS = {
+    23: ("C", "1st-CYS"),
+    41: ("W", "CONSERVED-TRP"),
+    104: ("C", "2nd-CYS"),
+    118: ("FW", "J-PHE/J-TRP"),
+}
+
+# A missing or substituted anchor is a soft flag, not a hard gate. The
+# odd-cysteine episode is the precedent: sequence alone cannot distinguish a
+# genuinely broken domain from an unusual-but-real one, and a truncated input
+# (someone pasted a partial sequence) is a data-entry problem rather than a
+# property of the molecule. Position 118 is weighted lower because
+# truncation at the J end is the single most common cause and is usually the
+# former.
+ANCHOR_MISSING_WEIGHT = 6.0
+ANCHOR_WRONG_WEIGHT = 8.0
+ANCHOR_118_WEIGHT = 3.0
+
+
+def check_v_domain_integrity(chain: NumberedChain, chain_name: str) -> list[Flag]:
+    """Conserved IMGT anchor residues present and correct (see IMGT_ANCHORS)."""
+    flags = []
+    observed = {r.position: r.aa for r in chain.residues if r.aa != "-"}
+
+    for position, (expected, name) in IMGT_ANCHORS.items():
+        base_weight = ANCHOR_118_WEIGHT if position == 118 else None
+        aa = observed.get(position)
+        if aa is None:
+            flags.append(
+                Flag(
+                    check="v_domain_integrity",
+                    severity="soft",
+                    region=_region_for(chain, position),
+                    weight=base_weight or ANCHOR_MISSING_WEIGHT,
+                    message=(
+                        f"conserved {name} at IMGT position {position} is absent "
+                        f"({chain_name}) — V domain looks truncated or incomplete"
+                    ),
+                )
+            )
+        elif aa not in expected:
+            flags.append(
+                Flag(
+                    check="v_domain_integrity",
+                    severity="soft",
+                    region=_region_for(chain, position),
+                    weight=base_weight or ANCHOR_WRONG_WEIGHT,
+                    message=(
+                        f"conserved {name} at IMGT position {position} is {aa!r}, "
+                        f"expected {'/'.join(expected)} ({chain_name}) — "
+                        "the immunoglobulin fold depends on this residue"
+                    ),
+                )
+            )
+    return flags
+
+
+def _region_for(chain: NumberedChain, position: int) -> str:
+    for r in chain.residues:
+        if r.position == position:
+            return r.region
+    return "chain"
+
+
 ALL_CHECKS = [
     check_sequence_sanity,
     check_cysteine_pairing,
     check_n_glycosylation,
     check_ptm_liability,
+    check_v_domain_integrity,
 ]
 
 
