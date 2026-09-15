@@ -265,22 +265,26 @@ the code comment, and do not silently pick one.
 
 Three levels, each defined by the action it triggers.
 
-```
-                    ┌─────────────────────────────────────┐
-  candidate  ───►   │ LEVEL 1  hard exclude (interruptive)│──► not pursued
-                    │ gates with measured FRR < 5%        │    (names the
-                    └──────────────┬──────────────────────┘     gate crossed)
-                                   │ passes
-                    ┌──────────────▼──────────────────────┐
-                    │ LEVEL 2  flagged for human (passive)│──► shown alongside,
-                    │ checks with 2 ≲ LR ≲ 11             │    never blocks
-                    └──────────────┬──────────────────────┘
-                                   │
-                    ┌──────────────▼──────────────────────┐
-                    │ LEVEL 3/4/5  resource count         │──► ordering + an
-                    │ how many engineering cycles?        │    actionable
-                    └─────────────────────────────────────┘     work estimate
-```
+**IMPLEMENTED. Numbering follows ESI: 1 is the one you act on first, 5 the one
+you do not pursue.** An earlier draft of this document had it backwards, with
+Level 1 meaning "reject" — the opposite of what Level 1 means to anyone who has
+seen ESI, where Level 1 is the resuscitation patient.
+
+| Level | Meaning | Action |
+|---|---|---|
+| 1 | no repairs needed | straight to the bench |
+| 2 | framework repairs only | one round, no re-measurement |
+| 3 | repairs land in a CDR | re-measure affinity afterwards |
+| 4 | a human must adjudicate | serious, not disqualifying |
+| 5 | crossed a boundary | do not pursue |
+
+**Level eligibility is decided by P(flag | known-good), not by LR magnitude.**
+An earlier version of this section said Level 2 was "checks with 2 ≲ LR ≲ 11",
+which was wrong twice over: the upper bound was just the largest value we
+happened to observe, and more importantly LR magnitude is the wrong axis. What
+makes an automatic rejection safe is not firing on good candidates. A check
+with LR 3 and P(flag|good) = 20% cannot gate; one with LR 3 and
+P(flag|good) = 0.5% can. LR tells you what a flag is worth once it fires.
 
 **Level 1 — hard exclude.** Entry requirement: measured
 P(flag | known-good) < 5% with a confidence interval, on a population the gate

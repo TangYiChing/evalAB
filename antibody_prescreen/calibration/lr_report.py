@@ -6,8 +6,8 @@ Replaces hand-set weights with an estimated quantity. For a binary check:
     LR- = P(no flag | bad) / P(no flag | good)   how much a pass should reassure you
 
 The thing that decides the triage LEVEL is not the LR. It is
-P(flag | good) — the false-rejection rate — because Level 1 means "reject
-automatically" and what makes that safe is not firing on good candidates. The
+P(flag | good) — the false-rejection rate — because rejecting a candidate
+(Level 5) is irreversible and what makes it safe is not firing on good ones. The
 LR tells you how much the flag is worth once it fires. These are different
 axes and conflating them is a mistake this module exists partly to prevent.
 
@@ -31,7 +31,7 @@ POSITIVE_LABEL = "TheraSAbDab"
 NEGATIVE_LABEL = "Patent text"
 
 # Trauma-triage benchmark: under-triage below 5%. A check may only become a
-# Level 1 auto-reject gate if the UPPER confidence bound of its false-rejection
+# rejecting gate (Level 5) if the UPPER confidence bound of its false-rejection
 # rate on known-good candidates clears this.
 FALSE_REJECTION_BUDGET = 0.05
 
@@ -63,12 +63,12 @@ def likelihood_ratios(a: int, n_good: int, b: int, n_bad: int) -> tuple[float, f
 def recommend_level(flag_rate_good: float, upper_bound: float, lr_plus: float) -> str:
     """Where this check belongs, and why."""
     if upper_bound < FALSE_REJECTION_BUDGET:
-        return "LEVEL 1 (hard gate)"
+        return "REJECTING GATE (routes to Level 5)"
     if flag_rate_good > 0.90:
-        return "LEVEL 3-5 (resource count) — fires on nearly everything"
+        return "repair count only — fires on nearly everything"
     if lr_plus > 1.3:
-        return "LEVEL 2 (flag for human)"
-    return "LEVEL 3-5 (resource count) — carries no discrimination"
+        return "REVIEW (shown, never routes)"
+    return "repair count only — carries no discrimination"
 
 
 def binary_report(rows: list[dict], check_columns: list[str]) -> None:

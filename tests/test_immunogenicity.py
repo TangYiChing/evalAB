@@ -291,7 +291,7 @@ def test_batched_and_per_chain_screening_agree(tmp_path):
         for c in candidates
     ]
     for a, b in zip(batched, solo):
-        assert a.verdict == b.verdict
+        assert a.triage_result.level == b.triage_result.level
         assert a.score == b.score
         flags = lambda r: sorted(
             f.message for f in r.all_flags if f.check.startswith("immunogenicity")

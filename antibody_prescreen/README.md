@@ -1,15 +1,37 @@
 # Antibody Pre-Screening (Tier 1 + Tier 2) — Prototype
 
-**Status: prototype. Calibrated against a clinical-grade population, but the
-score is a triage ORDERING, not a classifier** — measured AUC 0.587 for
-separating clinical-stage therapeutics from patent-text antibodies. See
-`docs/calibration-step7-results.md`.
+**Status: prototype. Routing is by triage LEVEL, not by a score.** The summed
+score turned out not to support a go/no-go decision (no gap between the
+buckets, AUC 0.587, a false-rejection rate that was defined rather than
+measured), so it is now a diagnostic field that nothing branches on. See
+`antibody_prescreen/triage.py` and `docs/triage_implementation_plan.md`.
 
-- **Thresholds** (`T_LOW=29.41`, `T_HIGH=38.31` in `fusion.py`) are percentile
-  placements — median and p90 — on 150 clinical-stage therapeutics from
-  PLAbDab. The scale now means "where does this sit against antibodies that
-  reached the clinic", replacing an earlier basis of "antibodies someone
-  crystallised".
+- **Five triage levels, numbered in the Emergency Severity Index direction**:
+  Level 1 is the candidate you act on first, Level 5 the one you do not pursue.
+
+  | Level | Meaning | What to do |
+  |---|---|---|
+  | 1 | no repairs needed | straight to the bench |
+  | 2 | framework repairs only | one round of mutagenesis, no re-measurement |
+  | 3 | repairs land in a CDR | re-measure affinity afterwards |
+  | 4 | a human must adjudicate | serious, but not disqualifying |
+  | 5 | crossed a boundary | do not pursue |
+
+  A check may only route to Level 5 if the **upper** 95% bound of its
+  false-rejection rate on known-good antibodies clears 5% — the trauma-triage
+  standard. Measured on 150 clinical-stage therapeutics vs 150 patent-text:
+
+  | | L1 | L2 | L3 | L4 | L5 |
+  |---|---|---|---|---|---|
+  | TheraSAbDab | 0.0% | 19.3% | 72.0% | 6.0% | **2.7%** |
+  | Patent text | 2.0% | 12.7% | 64.7% | 11.3% | **9.3%** |
+
+- **There is no GO / CONDITIONAL / NO-GO verdict any more.** Collapsing five
+  levels onto three words destroyed the distinction the levels exist to carry:
+  Level 2 and Level 3 both read "CONDITIONAL", but whether the fix lands in a
+  CDR — and therefore whether affinity has to be re-measured — is the whole
+  reason they are separate. Framework-repair candidates also read as "GO",
+  which invites sending them to the bench unrepaired.
 - **Immunogenicity is report-only (weight 0).** It runs, and the germline
   correction makes its flags meaningful, but calibration measured AUC 0.500 —
   exactly chance — and including it made the combined score *worse*

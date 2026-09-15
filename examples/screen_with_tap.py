@@ -9,7 +9,8 @@ What it does, per candidate:
     VH/VL sequence
       -> ABodyBuilder2 -> IMGT-numbered Fv model (.pdb, cached on disk)
       -> TAP -> 5 metrics, each GREEN / AMBER / RED
-      -> weighted soft flags, fused with the Tier 1 score into one verdict
+      -> weighted soft flags, routed into one triage level (1 = straight to
+         the bench, 5 = do not pursue; Emergency Severity Index direction)
 
 The candidates come from PLAbDab's paired_sequences.csv.gz (11 MB, fetched
 and cached on first run — NOT the 5 GB archive; see
@@ -17,10 +18,10 @@ antibody_prescreen/calibration/plabdab_source.py for why). The pilot is
 balanced between clinical-stage therapeutics and unselected patent entries,
 which is the population split the threshold calibration will eventually use.
 
-NOTE: the TAP weights in tap_runner.py are PROVISIONAL and uncalibrated, so
-the fused score here is not yet meaningful as a go/no-go number. The five TAP
-values and their flags, however, are real — those thresholds come from
-Raybould et al.'s therapeutic-antibody population, not from us.
+NOTE: routing is by triage level, not by the summed score — the score is kept
+only as a diagnostic and nothing branches on it. See antibody_prescreen/
+triage.py for why, and docs/triage_implementation_plan.md for the measurements
+behind each check's placement.
 """
 
 import sys
@@ -85,7 +86,8 @@ def main():
     if flagged:
         print(f"\n=== {len(flagged)} candidate(s) with a non-green TAP axis ===\n")
         for r in flagged:
-            print(f"{r.candidate_id} ({r.verdict}, score={r.score}):")
+            level = r.triage_result.level if r.triage_result else "?"
+            print(f"{r.candidate_id} (Level {level}):")
             for flag in r.all_flags:
                 if flag.check == "tap":
                     print(f"  w={flag.weight:<5} {flag.message}")

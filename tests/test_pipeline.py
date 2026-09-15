@@ -129,11 +129,11 @@ class TestFusion:
     def test_clean_pair_is_not_hard_gated(self):
         """The reference pair must be SOFT-scored, never hard-gated.
 
-        Asserts the hard-gate property directly rather than a verdict, which
-        would couple this test to wherever T_LOW/T_HIGH happen to sit. It did
-        once: the Step 7 recalibration moved T_HIGH from 40.0 to 38.31 and
-        this pair scores 39.92, so a verdict assertion started failing on a
-        threshold change that has nothing to do with hard gates.
+        Asserts the hard-gate property directly rather than a routed outcome,
+        which would couple this test to wherever the routing rules happen to
+        sit. It did once: when thresholds still existed, moving T_HIGH from
+        40.0 to 38.31 broke this test over a change that had nothing to do
+        with hard gates.
 
         The pair landing in the worst decile is not a bug. It carries several
         CDR deamidation motifs, and (see the package README) it is not a
@@ -151,7 +151,8 @@ class TestFusion:
         This deliberately changed. It used to assert NO-GO. Measured on 150
         clinical-stage therapeutics, `cysteine_pairing` fires on 5.3% of
         them — above the 5% false-rejection budget — so it is not eligible
-        to be a Level 1 gate. Sequence alone can only say "the total is odd",
+        to be a rejecting (Level 5) gate. Sequence alone can only say "the total
+        is odd",
         which is true of real approved molecules carrying a non-canonical
         disulfide.
 
@@ -161,18 +162,21 @@ class TestFusion:
         broken_vh = VH_REF.replace("GFNIKDTY", "GFNIKDTC")
         result = screen_candidate("test", broken_vh, VL_REF, run_immunogenicity=False)
 
-        assert result.triage_result.level != 1, "must not auto-reject"
+        assert result.triage_result.level != 5, "must not auto-reject"
         assert result.score != float("inf")
         assert any(f.check == "cysteine_pairing" for f in result.all_flags)
 
     def test_garbage_input_is_error_not_crash(self):
         result = screen_candidate("test", "NOTANANTIBODY", VL_REF, run_immunogenicity=False)
-        assert result.verdict == "ERROR"
         assert result.error is not None
+        # An un-numberable sequence gets no triage level at all, rather than
+        # being assigned one — it was never screened, which is a different
+        # thing from having been screened and rejected.
+        assert result.triage_result is None
 
     def test_batch_screening_regression_fixture(self):
-        """One candidate per verdict bucket — a regression fixture: re-run
-        this after any scoring/weight change and confirm the same buckets."""
+        """One candidate per triage outcome — a regression fixture: re-run
+        this after any routing change and confirm the same outcomes."""
         broken_cys_vh = VH_REF.replace("GFNIKDTY", "GFNIKDTC")
         extra_cdr_liability_vh = VH_REF.replace("SRWGGDGFYAMDY", "SRWGGDGFNGMDY")
 
@@ -192,11 +196,11 @@ class TestFusion:
         results = screen_batch(candidates, run_immunogenicity=False)
         by_id = {r.candidate_id: r for r in results}
 
-        # No candidate here crosses a Level 1 boundary: none has a broken fold,
+        # No candidate here crosses a Level 5 boundary: none has a broken fold,
         # a non-standard residue, or a poly-residue CDR run. An odd cysteine
-        # count is a Level 2 observation, not a rejection — see
+        # count is a review observation, not a rejection — see
         # test_odd_cysteine_does_not_auto_reject.
-        assert all(r.triage_result.level != 1 for r in results)
+        assert all(r.triage_result.level != 5 for r in results)
 
         # The ordering property is still the thing to guard: the variant with
         # an extra CDR liability must carry more repair cost than the clean

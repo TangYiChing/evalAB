@@ -3,7 +3,7 @@
 The vendored TAP code speaks in `MetricResult(metric_name, calculated_value,
 flag)`. `fusion.py` speaks in `Flag(check, severity, region, message, weight)`.
 This module is the only place the two meet, so re-tuning how TAP feeds the
-verdict is a change here and nowhere else.
+triage level is a change here and nowhere else.
 """
 
 from dataclasses import dataclass, field

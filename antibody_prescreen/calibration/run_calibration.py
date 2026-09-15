@@ -49,7 +49,7 @@ CHECK_NAMES = [
 ]
 
 FIELDNAMES = (
-    ["candidate_id", "pairing", "verdict", "triage_level", "cdr_repairs",
+    ["candidate_id", "pairing", "triage_level", "cdr_repairs",
      "framework_repairs", "total_score", "tier1_score", "error"]
     + [f"flag_{c}" for c in CHECK_NAMES]
     + ["flag_tap_any_red", "model_conf_max", "model_conf_mean", "vh_germline_identity"]
@@ -98,7 +98,6 @@ def score_one(candidate: dict, model_cache: str) -> dict:
         row["error"] = f"{type(e).__name__}: {e}"
         return row
 
-    row["verdict"] = result.verdict
     if result.triage_result is not None:
         row["triage_level"] = result.triage_result.level
         row["cdr_repairs"] = result.triage_result.cdr_repairs

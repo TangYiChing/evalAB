@@ -46,14 +46,15 @@ def main():
     print("=== Summary ===\n")
     print(format_report(results))
 
-    # Full detail for anything not GO: format_report only shows the top 1-2
-    # reasons by design (that's the whole point - one line per candidate for
-    # triage). Drill into result.all_flags for the complete picture on a
-    # specific candidate before acting on a CONDITIONAL/NO-GO call.
-    print("\n=== Full detail for the first non-GO candidate ===\n")
+    # Full detail for the first candidate that needs work. format_report only
+    # shows the top 1-2 reasons by design (that's the whole point - one line
+    # per candidate for triage). Drill into result.all_flags for the complete
+    # picture before acting on a level.
+    print("\n=== Full detail for the first candidate above Level 1 ===\n")
     for r in results:
-        if r.verdict != "GO":
-            print(f"{r.candidate_id} ({r.verdict}, score={r.score}):")
+        if r.triage_result is not None and r.triage_result.level > 1:
+            print(f"{r.candidate_id} (Level {r.triage_result.level}: "
+                  f"{r.triage_result.action}):")
             for flag in r.all_flags:
                 print(f"  [{flag.severity:9s}] {flag.check:16s} {flag.region:10s} "
                       f"w={flag.weight:<5} {flag.message}")

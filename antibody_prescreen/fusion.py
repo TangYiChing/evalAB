@@ -1,5 +1,6 @@
 """Score fusion: run every Tier 1 check on a VH/VL candidate, collapse the
-result into one verdict (GO / CONDITIONAL / NO-GO) with the top 1-2 reasons.
+result into one triage level (1 = straight to the bench, 5 = do not pursue)
+with the top 1-2 reasons.
 
 This is the piece that solves the "click fatigue" problem from the design
 discussion: all checks still run and all detail is retained, but the default
@@ -60,7 +61,6 @@ T_HIGH = 38.31
 @dataclass
 class CandidateResult:
     candidate_id: str
-    verdict: str  # "GO", "CONDITIONAL", "NO-GO", or "ERROR"
     score: float
     top_reasons: list[str]
     all_flags: list[Flag] = field(default_factory=list)
@@ -94,7 +94,7 @@ def screen_candidate(
         run_structure: run Tier 2 — build an ABodyBuilder2 model and compute
             the TAP profile. Needs the optional structure dependencies. If
             they are missing or modelling fails, the candidate still gets a
-            Tier 1 verdict with structure_available=False, rather than
+            Tier 1 level with structure_available=False, rather than
             erroring out — same contract as immunogenicity.
         model_cache: directory for cached .pdb models. Tier 2 only.
         predictor: a pre-built ABodyBuilder2 instance, to avoid reloading
@@ -105,7 +105,6 @@ def screen_candidate(
     except NumberingError as e:
         return CandidateResult(
             candidate_id=candidate_id,
-            verdict="ERROR",
             score=0.0,
             top_reasons=[str(e)],
             error=str(e),
@@ -179,8 +178,7 @@ def screen_candidate(
 
     return CandidateResult(
         candidate_id=candidate_id,
-        verdict=triage_result.verdict,
-        score=float("inf") if triage_result.level == 1 else round(score, 2),
+        score=float("inf") if triage_result.level == 5 else round(score, 2),
         top_reasons=triage_result.reasons[:2],
         all_flags=all_flags,
         immunogenicity_available=immuno_available,
@@ -251,14 +249,12 @@ def format_report(results: list[CandidateResult]) -> str:
     structure profile — a Tier-1-only run keeps exactly the table it had
     before Tier 2 existed.
     """
-    def sort_key(r):
-        if r.verdict == "ERROR":
-            return (99, 0)
-        level = r.triage_result.level if r.triage_result else 3
-        # Level 5 is the best outcome, so invert for display order.
-        return (0 if level == 1 else 1, -level if level > 1 else 0)
-
-    ranked = sorted(results, key=sort_key)
+    # Lowest level first: Level 1 is the candidate to act on, Level 5 the one
+    # not to pursue. Same direction as the Emergency Severity Index.
+    ranked = sorted(
+        results,
+        key=lambda r: (99 if r.triage_result is None else r.triage_result.level),
+    )
     lines = [
         "| Candidate | Level | What to do | Repairs | Why |",
         "|---|---|---|---|---|",
@@ -269,9 +265,7 @@ def format_report(results: list[CandidateResult]) -> str:
             continue
         t = r.triage_result
         repairs = (
-            f"{t.cdr_repairs} CDR / {t.framework_repairs} FR"
-            if t.level != 1
-            else "—"
+            "—" if t.level == 5 else f"{t.cdr_repairs} CDR / {t.framework_repairs} FR"
         )
         why = "; ".join(t.reasons[:2]) if t.reasons else "—"
         lines.append(

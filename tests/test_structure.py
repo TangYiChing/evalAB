@@ -109,7 +109,8 @@ def test_structure_failure_degrades_to_tier1(monkeypatch):
         "degraded", VH_REF, VL_REF, run_immunogenicity=False, run_structure=True
     )
 
-    assert result.verdict != "ERROR"
+    assert result.error is None
+    assert result.triage_result is not None
     assert result.structure_available is False
     assert result.tap_profile is None
     reasons = [f.message for f in result.all_flags if f.check == "tap"]
@@ -197,9 +198,10 @@ def test_injected_negative_patch_is_caught(tmp_path):
 
     tap_messages = [f.message for f in result.all_flags if f.check == "tap"]
     assert len(tap_messages) == 2
-    # A TAP RED is a Level 1 boundary crossing: 0 of 150 clinical-stage
-    # therapeutics carry one.
-    assert result.triage_result.level == 1
+    # A TAP RED is a Level 5 boundary crossing: 0 of 150 clinical-stage
+    # therapeutics carry one. Level 5 is the "do not pursue" end, following
+    # the Emergency Severity Index direction.
+    assert result.triage_result.level == 5
     assert "PNC" in format_report([result])
 
 

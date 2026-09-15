@@ -13,13 +13,31 @@ So this module routes on the same principle the Emergency Severity Index uses:
 **a level is defined by the action it triggers.** Level 1 in an emergency
 department does not mean "score above X", it means "goes to resuscitation now".
 
-## The three questions, asked in order
+## Numbering follows ESI: 1 is the one you act on first, 5 is the one you do not
 
-1. Did this cross a boundary no known-good antibody crosses? -> LEVEL 1
-2. Does anything here need a human to look at it?            -> LEVEL 2
-3. How many rounds of engineering before it reaches a bench? -> LEVEL 3/4/5
+This is the direction the Emergency Severity Index uses, and getting it
+backwards is easy — an earlier version of this module did. There, Level 1 meant
+"reject", which is the opposite of what Level 1 means to anyone who has seen
+ESI, where Level 1 is the resuscitation patient. The symptom was visible in the
+distribution and went unnoticed: 18 candidates at "Level 1" and zero at
+"Level 5", when ESI Level 1 is by nature rare and 4/5 are the bulk.
 
-Only question 1 rejects. Questions 2 and 3 order and annotate.
+    LEVEL 1  no repairs needed          -> straight to the bench
+    LEVEL 2  framework repairs only     -> one round, no re-measurement
+    LEVEL 3  repairs land in a CDR      -> re-measure affinity afterwards
+    LEVEL 4  a human must adjudicate    -> serious, but not disqualifying
+    LEVEL 5  crossed a boundary         -> do not pursue
+
+Read it as "how much does this cost me, and does it cost me anything at all":
+1 costs nothing, 5 costs everything because you never get it back.
+
+## The questions, asked in order
+
+1. Did this cross a boundary no known-good antibody crosses?  -> LEVEL 5
+2. Is there a finding a repair count cannot capture?          -> LEVEL 4
+3. How many rounds of engineering before it reaches a bench?  -> LEVEL 3/2/1
+
+Only question 1 rejects. The rest order and annotate.
 
 ## The repair-cost axis
 
@@ -42,7 +60,7 @@ from dataclasses import dataclass, field
 
 from .checks import Flag
 
-# Checks eligible to reject a candidate outright.
+# Checks eligible to reject a candidate outright (Level 5).
 #
 # Entry requirement is the trauma-triage standard: measured false-rejection
 # rate on known-good antibodies below 5%, ideally with the upper confidence
@@ -61,7 +79,7 @@ from .checks import Flag
 # so no natural-antibody population can estimate its LR at any sample size we
 # can reach. They are generative-model sampling artefacts, and AbSci's Origin-1
 # pipeline filters its Critical tier outright for the same reason.
-LEVEL_1_CHECKS = {
+REJECTING_CHECKS = {
     "sequence_sanity",
     "tap",
     "v_domain_integrity",
@@ -74,7 +92,7 @@ LEVEL_1_CHECKS = {
 # rather than inferred from the message text.
 #
 # This was found by measurement, not by review: the first version put "tap" in
-# LEVEL_1_CHECKS wholesale, so a TAP AMBER rejected. Result: 46/150 (30.7%) of
+# the rejecting set wholesale, so a TAP AMBER rejected. Result: 46/150 (30.7%) of
 # clinical-stage therapeutics auto-rejected, 44 of them on AMBER alone and
 # zero on RED. Against a 5% budget. A check that fires on a third of known-good
 # candidates cannot gate, and the budget is what catches it.
@@ -83,7 +101,8 @@ REJECTING_MIN_WEIGHT = {
     "poly_residue_run": 6.0,  # checks.POLY_RUN_CRITICAL_WEIGHT; "Other" is 1.0
 }
 
-# Checks worth a human's attention that may not reject on their own.
+# Checks worth showing next to a candidate that never change its level on their
+# own. Passive display — this is where the alert-fatigue remedy lives.
 #
 #   n_glycosylation      3.3% on known-good, LR+ 2.64
 #   cysteine_pairing     5.3% on known-good, LR+ 2.06  <- over budget, cannot gate
@@ -92,7 +111,7 @@ REJECTING_MIN_WEIGHT = {
 #                        calibration set, so LR unmeasurable there
 #   immunogenicity       LR+ measured at 0.500 — chance — so it informs a human
 #                        and never moves a level
-LEVEL_2_CHECKS = {
+REVIEW_CHECKS = {
     "n_glycosylation",
     "cysteine_pairing",
     "disulfide_pairing",
@@ -108,12 +127,28 @@ LEVEL_2_CHECKS = {
 RESOURCE_CHECKS = {"ptm_liability", "developability"}
 
 LEVEL_ACTIONS = {
-    1: "do not pursue — crossed a boundary no known-good antibody crosses",
-    2: "needs a human to look before committing bench time",
+    1: "no repairs needed — straight to the bench",
+    2: "fixable in framework — one round of mutagenesis, no re-measurement",
     3: "fixable, but the fix is in a CDR — re-measure affinity after",
-    4: "fixable in framework — one round of mutagenesis, no re-measurement",
-    5: "no repairs needed — straight to the bench",
+    4: "needs a human to adjudicate before committing bench time",
+    5: "do not pursue — crossed a boundary no known-good antibody crosses",
 }
+
+# Level 4 is for findings a repair count cannot express: the problem is not
+# "how many substitutions" but "somebody has to decide whether this is
+# acceptable at all". Deliberately a short list — if every Level 2 check could
+# send a candidate here, almost everything would land at 4 and the level would
+# mean nothing.
+#
+#   disulfide_pairing  an unpaired cysteine in the predicted fold is a real
+#                      covalent-aggregation risk, and it is also real biology
+#                      in some approved molecules. Not repairable by one
+#                      substitution, not disqualifying either.
+#   humanness          only at the very-low tier, i.e. a framework that is
+#                      substantially non-human. Humanising it is a project,
+#                      not a repair.
+ADJUDICATION_CHECKS = {"disulfide_pairing", "humanness"}
+HUMANNESS_ADJUDICATION_MIN_WEIGHT = 5.0  # humanness.VERY_LOW_IDENTITY_WEIGHT
 
 
 @dataclass
@@ -123,16 +158,19 @@ class TriageResult:
     reasons: list[str] = field(default_factory=list)
     cdr_repairs: int = 0
     framework_repairs: int = 0
-    level2_flags: list[Flag] = field(default_factory=list)
+    review_flags: list[Flag] = field(default_factory=list)
 
-    @property
-    def verdict(self) -> str:
-        """Backwards-compatible mapping onto the old vocabulary."""
-        return {1: "NO-GO", 2: "CONDITIONAL", 3: "CONDITIONAL"}.get(self.level, "GO")
+    # There is deliberately no GO / CONDITIONAL / NO-GO property. Collapsing
+    # five levels onto three words destroyed the distinction the levels exist
+    # to carry: Level 2 and Level 3 both used to read "CONDITIONAL", but the
+    # difference between them — does the fix land in a CDR, so does affinity
+    # have to be re-measured — is the entire point of separating them. Worse,
+    # framework-repair candidates read as "GO", which invites someone to send
+    # them to the bench unrepaired.
 
 
 def _is_rejecting(flag: Flag) -> bool:
-    if flag.check not in LEVEL_1_CHECKS:
+    if flag.check not in REJECTING_CHECKS:
         return False
     minimum = REJECTING_MIN_WEIGHT.get(flag.check)
     return True if minimum is None else flag.weight >= minimum
@@ -159,18 +197,11 @@ def triage(flags: list[Flag]) -> TriageResult:
         for f in flags
         if f.severity == "hard_gate" and f.check in HARD_GATE_CHECKS
     ]
-    if hard_gates:
-        return TriageResult(
-            level=1,
-            action=LEVEL_ACTIONS[1],
-            reasons=[f.message for f in hard_gates],
-        )
-
-    rejecting = [f for f in flags if _is_rejecting(f)]
+    rejecting = hard_gates + [f for f in flags if _is_rejecting(f)]
     if rejecting:
         return TriageResult(
-            level=1,
-            action=LEVEL_ACTIONS[1],
+            level=5,
+            action=LEVEL_ACTIONS[5],
             reasons=[f.message for f in rejecting],
         )
 
@@ -182,26 +213,27 @@ def triage(flags: list[Flag]) -> TriageResult:
     cdr = sum(1 for f in repairs if f.region.startswith("CDR"))
     framework = len(repairs) - cdr
 
-    level2 = [f for f in flags if f.check in LEVEL_2_CHECKS]
+    adjudication = [f for f in flags if _needs_adjudication(f)]
+    review = [f for f in flags if f.check in REVIEW_CHECKS]
 
-    if cdr:
+    if adjudication:
+        level = 4
+    elif cdr:
         level = 3
     elif framework:
-        level = 4
+        level = 2
     else:
-        level = 5
-
-    # A Level 2 finding cannot make a candidate worse than "needs a look", but
-    # it must not let one be waved through as Level 5 either.
-    if level == 5 and level2:
-        level = 4
+        level = 1
 
     reasons = []
+    if adjudication:
+        reasons.extend(f.message for f in adjudication[:2])
     if cdr:
         reasons.append(f"{cdr} repair(s) in a CDR — affinity must be re-measured")
     if framework:
         reasons.append(f"{framework} framework repair(s)")
-    reasons.extend(f.message for f in level2[:2])
+    if not reasons:
+        reasons.extend(f.message for f in review[:2])
 
     return TriageResult(
         level=level,
@@ -209,5 +241,13 @@ def triage(flags: list[Flag]) -> TriageResult:
         reasons=reasons,
         cdr_repairs=cdr,
         framework_repairs=framework,
-        level2_flags=level2,
+        review_flags=review,
     )
+
+
+def _needs_adjudication(flag: Flag) -> bool:
+    if flag.check not in ADJUDICATION_CHECKS:
+        return False
+    if flag.check == "humanness":
+        return flag.weight >= HUMANNESS_ADJUDICATION_MIN_WEIGHT
+    return True
