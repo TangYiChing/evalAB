@@ -274,3 +274,52 @@ def test_model_confidence_is_captured_and_is_not_ptm(tmp_path):
     assert confidence["metric"] == "abodybuilder2_ensemble_rmsd_angstrom"
     assert set(confidence["per_residue"]) == {"H", "L"}
     assert 0 < confidence["mean"] < 5.0
+
+
+def test_sequence_gap_is_counted_in_residues_not_imgt_numbers(tmp_path):
+    """Two cysteines can be far apart in the chain but adjacent in IMGT number.
+
+    IMGT numbers CDR-H3 outward from both ends with insertion codes —
+    111, 111A...111F, then 112F...112A, 112 — so a pair at IMGT 111D and 112F
+    differs by 1 in number while sitting 3 residues apart in the chain. An
+    earlier version compared the numbers, so it silently refused to even
+    evaluate such a pair.
+
+    Found on a real design batch whose CDR-H3 read C-L-D-C. Natural antibodies
+    rarely carry paired cysteines in CDR-H3, so no amount of testing against
+    them would have surfaced it.
+
+    Uses a synthetic PDB rather than a model build: the point is how the
+    pairing logic handles insertion codes, nothing about a real structure. The
+    coordinates give an SG-SG distance of 2.05 A and a chi3 of -90 degrees,
+    both inside the accepted windows — an earlier draft of this test put all
+    four atoms in one plane, which makes chi3 exactly 180 and is rejected for
+    a reason that has nothing to do with the bug being tested.
+    """
+    from antibody_prescreen.structure.disulfide import find_disulfides
+
+    atoms = [
+        (111, "D", "CYS", [("CB", (0.0, 1.5, 0.0)), ("SG", (0.0, 0.0, 0.0))]),
+        (111, "E", "ALA", [("CB", (1.0, 5.0, 5.0))]),
+        (111, "F", "ALA", [("CB", (2.0, 6.0, 6.0))]),
+        (112, "F", "CYS", [("SG", (2.05, 0.0, 0.0)), ("CB", (2.05, 0.0, 1.5))]),
+    ]
+
+    lines = []
+    serial = 1
+    for number, insertion, resname, named_atoms in atoms:
+        for name, (x, y, z) in named_atoms:
+            lines.append(
+                f"ATOM  {serial:5d}  {name:<3s} {resname} H{number:4d}{insertion}"
+                f"   {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           {name[0]}"
+            )
+            serial += 1
+
+    path = tmp_path / "insertion_codes.pdb"
+    path.write_text("\n".join(lines) + "\nEND\n")
+
+    result = find_disulfides(path)
+
+    assert result.available
+    assert result.unpaired == [], "the pair must at least be evaluated"
+    assert {tuple(sorted(p)) for p in result.pairs} == {("H111D", "H112F")}

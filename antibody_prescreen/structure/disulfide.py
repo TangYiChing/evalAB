@@ -45,8 +45,15 @@ SG_DISTANCE_MAX = 2.8
 # not to grade geometry quality.
 CHI3_MIN, CHI3_MAX = -140.0, 140.0
 
-# Minimum separation in IMGT position so a cysteine cannot pair with its
+# Minimum separation along the CHAIN so a cysteine cannot pair with its
 # immediate neighbour, which is geometrically impossible anyway.
+#
+# Counted in residues, NOT in IMGT position number. That distinction is not
+# pedantic: IMGT numbers CDR-H3 outward from both ends with insertion codes
+# (111, 111A...111F, 112F...112A, 112), so two cysteines at IMGT 111D and 112F
+# differ by 1 in number while sitting 3 residues apart in the chain. An earlier
+# version compared the numbers and silently refused to even evaluate that pair.
+# Found on a real design batch where CDR-H3 read C-L-D-C.
 MIN_SEQUENCE_GAP = 3
 
 UNPAIRED_WEIGHT = 6.0
@@ -106,18 +113,21 @@ def find_disulfides(model_path: Path | str) -> DisulfideResult:
 
     cysteines = []
     for chain in structure[0]:
-        for residue in chain:
+        # Ordinal position along the chain, which is what "three residues
+        # apart" actually means. residue.id[1] is the IMGT number and is not
+        # monotonic across insertion codes in CDR-H3.
+        for index, residue in enumerate(chain):
             if residue.get_resname() != "CYS" or "SG" not in residue:
                 continue
             label = f"{chain.id}{residue.id[1]}{residue.id[2].strip()}"
-            cysteines.append((label, chain.id, residue.id[1], residue))
+            cysteines.append((label, chain.id, index, residue))
 
     if not cysteines:
         return DisulfideResult(available=True, pairs=[], unpaired=[])
 
     candidates = []
-    for (l1, c1, n1, r1), (l2, c2, n2, r2) in combinations(cysteines, 2):
-        if c1 == c2 and abs(n1 - n2) < MIN_SEQUENCE_GAP:
+    for (l1, c1, i1, r1), (l2, c2, i2, r2) in combinations(cysteines, 2):
+        if c1 == c2 and abs(i1 - i2) < MIN_SEQUENCE_GAP:
             continue
         distance = r1["SG"] - r2["SG"]
         if not (SG_DISTANCE_MIN <= distance <= SG_DISTANCE_MAX):
