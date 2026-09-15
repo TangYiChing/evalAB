@@ -178,7 +178,7 @@ def screen_candidate(
 
     return CandidateResult(
         candidate_id=candidate_id,
-        score=float("inf") if triage_result.level == 5 else round(score, 2),
+        score=round(score, 2),
         top_reasons=triage_result.reasons[:2],
         all_flags=all_flags,
         immunogenicity_available=immuno_available,
@@ -265,10 +265,13 @@ def format_report(results: list[CandidateResult]) -> str:
             continue
         t = r.triage_result
         repairs = (
-            "—" if t.level == 5 else f"{t.cdr_repairs} CDR / {t.framework_repairs} FR"
+            f"{t.cdr_repairs} CDR / {t.framework_repairs} FR"
+            if t.level <= 2
+            else "—"
         )
         why = "; ".join(t.reasons[:2]) if t.reasons else "—"
         lines.append(
-            f"| {r.candidate_id} | **L{t.level}** | {t.action} | {repairs} | {why} |"
+            f"| {r.candidate_id} | **L{t.level} {t.name}** | {t.action} | "
+            f"{repairs} | {why} |"
         )
     return "\n".join(lines)

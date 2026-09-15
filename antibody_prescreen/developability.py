@@ -1,5 +1,15 @@
-"""Sequence-based developability checks: aggregation propensity (AGGRESCAN),
-isoelectric point, and hydrophobic patches.
+"""Aggregation propensity (AGGRESCAN) and net charge.
+
+Renamed from "developability", which was too vague to be useful: it bundled
+three unrelated measurements under one name, and a flag saying
+"developability" told the reader nothing about what was actually wrong.
+Aggregation and charge are separable, mechanistically different, and each is
+something a person can picture.
+
+They are also emitted as separate checks now, because bundling them made both
+uninterpretable: the combined check fired on 100% of candidates in both
+populations (LR exactly 1.00), and there was no way to tell whether that came
+from the aggregation part, the charge part, or the unconditional flag.
 
 Core algorithm ported from the ToolUniverse `tooluniverse-antibody-engineering`
 skill's `scripts/developability.py` (pure-Python AGGRESCAN implementation,
@@ -102,7 +112,7 @@ def isoelectric_point(seq: str) -> float:
     return round((lo + hi) / 2, 2)
 
 
-def check_developability(chain: NumberedChain, chain_name: str) -> list[Flag]:
+def check_aggregation_and_charge(chain: NumberedChain, chain_name: str) -> list[Flag]:
     seq = chain.full_sequence()
     residues = [r for r in chain.residues if r.aa != "-"]
 
@@ -123,7 +133,7 @@ def check_developability(chain: NumberedChain, chain_name: str) -> list[Flag]:
     # modestly since this is one signal among several.
     flags.append(
         Flag(
-            check="developability",
+            check="aggregation",
             severity="soft",
             region="chain",
             weight=na4vss * 15.0,
@@ -140,7 +150,7 @@ def check_developability(chain: NumberedChain, chain_name: str) -> list[Flag]:
     for spot, region_label in cdr_overlapping_spots:
         flags.append(
             Flag(
-                check="developability",
+                check="aggregation",
                 severity="soft",
                 region=region_label,
                 weight=2.0,
@@ -155,7 +165,7 @@ def check_developability(chain: NumberedChain, chain_name: str) -> list[Flag]:
     if pi < PI_LOW or pi > PI_HIGH:
         flags.append(
             Flag(
-                check="developability",
+                check="charge",
                 severity="soft",
                 region="chain",
                 weight=2.0,

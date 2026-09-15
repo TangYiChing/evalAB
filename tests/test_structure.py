@@ -196,13 +196,21 @@ def test_injected_negative_patch_is_caught(tmp_path):
     assert result.tap_profile.values["Negative Patch Score"] > 3.50
     assert result.tap_profile.flags["SFvCSP"] == "AMBER"
 
-    tap_messages = [f.message for f in result.all_flags if f.check == "tap"]
-    assert len(tap_messages) == 2
+    # The message must say which boundary and by how much — "crossed a
+    # boundary" on its own is not something a person can act on.
+    pnc = next(f for f in result.all_flags if f.check == "tap_pnc")
+    assert "above the 3.5 upper bound" in pnc.message
+
+    # One check name per TAP metric now, so each can be measured and routed on
+    # its own: PNC goes red and SFvCSP goes amber, and they route differently.
+    tap_flags_seen = {f.check for f in result.all_flags if f.check.startswith("tap_")}
+    assert tap_flags_seen == {"tap_pnc", "tap_sfvcsp"}
     # A TAP RED is a Level 5 boundary crossing: 0 of 150 clinical-stage
     # therapeutics carry one. Level 5 is the "do not pursue" end, following
     # the Emergency Severity Index direction.
     assert result.triage_result.level == 5
     assert "PNC" in format_report([result])
+    assert "Out of range" in format_report([result])
 
 
 @pytest.mark.slow

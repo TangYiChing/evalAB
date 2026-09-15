@@ -1,159 +1,200 @@
-"""Triage levels: what happens to this candidate, not what it scored.
+"""Triage levels: what happens to this candidate, and what it would cost.
 
-## Why levels and not a score
+## The level is the WORST finding, not the sum of findings
 
-The fused score cut at two thresholds could not support the decision it was
-being asked to support. Measured on 150 clinical-stage therapeutics: the score
-distribution is a single smooth unimodal hill with no gap between GO and
-NO-GO, 17% of known-good antibodies sit within +/-3 points of the upper
-threshold, and the "10% false rejection" figure was a restatement of where the
-p90 line was drawn rather than a measurement.
+An emergency department triages a patient with a broken finger and chest pain
+on the chest pain. It does not average them. Same here:
 
-So this module routes on the same principle the Emergency Severity Index uses:
-**a level is defined by the action it triggers.** Level 1 in an emergency
-department does not mean "score above X", it means "goes to resuscitation now".
+    level = max(severity of every finding)
 
-## Numbering follows ESI: 1 is the one you act on first, 5 is the one you do not
+A candidate reaches Level 1 only because nothing is worse than Level 1. This
+is what makes the level answer a question a person can act on — "if I send
+this to the bench, what is the largest cost I could pay?" — and it is also why
+there are no weights anywhere in this module. A max needs no weights; only a
+sum does.
 
-This is the direction the Emergency Severity Index uses, and getting it
-backwards is easy — an earlier version of this module did. There, Level 1 meant
-"reject", which is the opposite of what Level 1 means to anyone who has seen
-ESI, where Level 1 is the resuscitation patient. The symptom was visible in the
-distribution and went unnoticed: 18 candidates at "Level 1" and zero at
-"Level 5", when ESI Level 1 is by nature rare and 4/5 are the bulk.
+## Numbering
 
-    LEVEL 1  no repairs needed          -> straight to the bench
-    LEVEL 2  framework repairs only     -> one round, no re-measurement
-    LEVEL 3  repairs land in a CDR      -> re-measure affinity afterwards
-    LEVEL 4  a human must adjudicate    -> serious, but not disqualifying
-    LEVEL 5  crossed a boundary         -> do not pursue
+Level 1 is the candidate you act on first; Level 5 is the one you do not
+pursue. Note this is the INVERSE of CTAS/ESI severity, where Level 1 is the
+resuscitation patient. The two domains allocate in opposite directions: an
+emergency department spends its scarce resource on the sickest, drug discovery
+spends its scarce resource (bench time) on the cleanest. You cannot preserve
+both mappings, and this one preserves "level number = order you get to it".
 
-Read it as "how much does this cost me, and does it cost me anything at all":
-1 costs nothing, 5 costs everything because you never get it back.
+| Level | Name | Condition |
+|---|---|---|
+| 1 | Ready | No findings, or only framework-located repairs. One round of point mutagenesis at most; binding is untouched, so no re-measurement. |
+| 2 | Rework | A repairable liability sits in a CDR or CDR vicinity. Fixable, but the fix may take the binding with it — affinity must be re-measured afterwards. |
+| 3 | Immune risk | A liability with no repair locus that bears on immunogenicity: a substantially non-human framework, or Fv-wide charge asymmetry. Not a substitution away from fixed; a decision about whether to re-engineer. |
+| 4 | Hold | A structural finding that is serious but unresolved — an unpaired cysteine in the predicted fold. Not repairable by substitution, not disqualifying either. A person must decide. |
+| 5 | Out of range | Outside the range spanned by every known therapeutic antibody, or not a foldable V domain at all. The flag names which boundary and by how much. |
 
-## The questions, asked in order
+## Two axes decide which level a check routes to
 
-1. Did this cross a boundary no known-good antibody crosses?  -> LEVEL 5
-2. Is there a finding a repair count cannot capture?          -> LEVEL 4
-3. How many rounds of engineering before it reaches a bench?  -> LEVEL 3/2/1
+**Axis 1 — does the finding have a locus?** If it sits on a specific residue
+or segment, its position decides its cost, because position decides whether
+fixing it risks the binding you already have. Framework -> Level 1, CDR ->
+Level 2. PTM motifs, N-glycosylation sites, aggregation hot spots and the four
+CDR-region TAP metrics all live here.
 
-Only question 1 rejects. The rest order and annotate.
+**Axis 2 — if it has no locus, does it bear on immunogenicity?** A whole-
+molecule property cannot be assigned to a CDR or a framework, and changing it
+is a redesign rather than a repair. Those are classified by whether they feed
+the anti-drug-antibody pathway: germline identity and Fv-wide charge symmetry
+(SFvCSP) do, and route to Level 3.
 
-## The repair-cost axis
+PTM deliberately stays on Axis 1 even though there is a real mechanistic link
+to immunogenicity — deamidation and isomerization create isoaspartate, a
+neo-epitope tolerance never covered. It stays because it HAS a locus, and the
+locus is what determines its repair cost. Moving it to Axis 2 would discard
+the CDR-versus-framework distinction that makes it actionable. The neo-epitope
+risk is noted on CDR-located PTM flags instead of relocating the check.
 
-Levels 3/4/5 count resources the way ESI counts labs and consults. The axis
-that matters is NOT how many positions must change — it is:
+## What Level 3 rests on
 
-    **does fixing this risk the binding you already have?**
+Mechanism, not measurement, and the distinction matters.
 
-A framework N-glyc motif and a CDR-H3 N-glyc motif are both one point
-mutation. But the CDR fix may destroy the binder, so it costs an extra round
-of affinity measurement. That is the real resource difference, and it is
-commensurable in a way that summing weighted flags is not.
+A check justified by DATA has a measured likelihood ratio: we counted how
+often it fires on 150 known-good and 150 background antibodies, so the claim
+is falsifiable with other data. A check justified by MECHANISM has a reason it
+must matter — no IMGT-104 cysteine means no intradomain disulfide means no
+immunoglobulin fold — which does not need statistics but also does not tell
+you how often it happens.
 
-Conserved IMGT positions are excluded from the count upstream in checks.py:
-a "liability" at a structurally required residue is not repairable, so
-counting it inflates the estimate with work nobody can do.
+Level 3 rests on mechanism. The anti-drug-antibody pathway is well documented,
+but the measured likelihood ratio of the MHC-II prediction on this population
+is 0.500 — chance. Germline identity could not be measured at all, because the
+calibration set was filtered to human frameworks and so has no variance in it.
+Anyone with outcome data should expect to revise this level, and should know
+that is what they are revising.
 """
 
 from dataclasses import dataclass, field
 
 from .checks import Flag
 
-# Checks eligible to reject a candidate outright (Level 5).
-#
-# Entry requirement is the trauma-triage standard: measured false-rejection
-# rate on known-good antibodies below 5%, ideally with the upper confidence
-# bound clearing it too.
-#
-# Measured on 150 clinical-stage therapeutics (derivation only, not yet
-# externally validated — docs/triage_implementation_plan.md Phase 2):
-#
-#   sequence_sanity      0.0%  (0/150)   LR+ 11.00
-#   tap (any RED)        0.0%  (0/150)   LR+ 11.00
-#   v_domain_integrity   0.7%  (1/150)   mechanism: no fold without these residues
-#   poly_residue_run     see below
-#
-# poly_residue_run is here on MECHANISM AND PRECEDENT, not on a measured LR.
-# Its motifs occur essentially never in natural antibodies (5xW: zero of 300),
-# so no natural-antibody population can estimate its LR at any sample size we
-# can reach. They are generative-model sampling artefacts, and AbSci's Origin-1
-# pipeline filters its Critical tier outright for the same reason.
-REJECTING_CHECKS = {
-    "sequence_sanity",
-    "tap",
-    "v_domain_integrity",
-    "poly_residue_run",
+LEVEL_NAMES = {
+    1: "Ready",
+    2: "Rework",
+    3: "Immune risk",
+    4: "Hold",
+    5: "Out of range",
 }
-
-# Several checks emit flags at two severities under one check name, and only
-# the severe tier may reject. The tiers are distinguished by weight at the
-# point of emission, so the minimum rejecting weight is recorded per check
-# rather than inferred from the message text.
-#
-# This was found by measurement, not by review: the first version put "tap" in
-# the rejecting set wholesale, so a TAP AMBER rejected. Result: 46/150 (30.7%) of
-# clinical-stage therapeutics auto-rejected, 44 of them on AMBER alone and
-# zero on RED. Against a 5% budget. A check that fires on a third of known-good
-# candidates cannot gate, and the budget is what catches it.
-REJECTING_MIN_WEIGHT = {
-    "tap": 6.0,               # tap_runner.RED_WEIGHT; AMBER is 2.0
-    "poly_residue_run": 6.0,  # checks.POLY_RUN_CRITICAL_WEIGHT; "Other" is 1.0
-}
-
-# Checks worth showing next to a candidate that never change its level on their
-# own. Passive display — this is where the alert-fatigue remedy lives.
-#
-#   n_glycosylation      3.3% on known-good, LR+ 2.64
-#   cysteine_pairing     5.3% on known-good, LR+ 2.06  <- over budget, cannot gate
-#   disulfide_pairing    structural; LR unmeasured
-#   humanness            germline identity; no variance in the human-framework
-#                        calibration set, so LR unmeasurable there
-#   immunogenicity       LR+ measured at 0.500 — chance — so it informs a human
-#                        and never moves a level
-REVIEW_CHECKS = {
-    "n_glycosylation",
-    "cysteine_pairing",
-    "disulfide_pairing",
-    "humanness",
-    "immunogenicity",
-    "immunogenicity_observed",
-    "poly_residue_run",
-}
-
-# Checks that fire on essentially every antibody and therefore cannot
-# discriminate, but do estimate work. Measured LR+ = 1.00 for both: they fire
-# on 100% of clinical-stage therapeutics AND 100% of patent-text antibodies.
-RESOURCE_CHECKS = {"ptm_liability", "developability"}
 
 LEVEL_ACTIONS = {
-    1: "no repairs needed — straight to the bench",
-    2: "fixable in framework — one round of mutagenesis, no re-measurement",
-    3: "fixable, but the fix is in a CDR — re-measure affinity after",
-    4: "needs a human to adjudicate before committing bench time",
-    5: "do not pursue — crossed a boundary no known-good antibody crosses",
+    1: "send to the bench — at most one round of framework mutagenesis first",
+    2: "repairable, but the fix is in a CDR — re-measure affinity afterwards",
+    3: "decide whether to re-engineer — this is not a substitution away from fixed",
+    4: "a person must look before any bench time is committed",
+    5: "do not pursue — outside the range of every known therapeutic antibody",
 }
 
-# Level 4 is for findings a repair count cannot express: the problem is not
-# "how many substitutions" but "somebody has to decide whether this is
-# acceptable at all". Deliberately a short list — if every Level 2 check could
-# send a candidate here, almost everything would land at 4 and the level would
-# mean nothing.
+# --- Level 5: out of range ------------------------------------------------
 #
-#   disulfide_pairing  an unpaired cysteine in the predicted fold is a real
-#                      covalent-aggregation risk, and it is also real biology
-#                      in some approved molecules. Not repairable by one
-#                      substitution, not disqualifying either.
-#   humanness          only at the very-low tier, i.e. a framework that is
-#                      substantially non-human. Humanising it is a project,
-#                      not a repair.
-ADJUDICATION_CHECKS = {"disulfide_pairing", "humanness"}
-HUMANNESS_ADJUDICATION_MIN_WEIGHT = 5.0  # humanness.VERY_LOW_IDENTITY_WEIGHT
+# Eligibility is the trauma-triage standard: the UPPER 95% bound of a check's
+# false-rejection rate on known-good antibodies must clear 5%.
+#
+# Measured on 150 clinical-stage therapeutics (derivation only):
+#
+#   sequence_sanity      0.0% (0/150), 95% upper 2.5%   LR+ 11.00
+#   v_domain_integrity   0.7% (1/150), 95% upper 3.7%   mechanism: no fold
+#   tap_psh RED          0.0% (0/150), 95% upper 2.5%   LR+  7.00
+#   tap_pnc RED          0.0% (0/150), 95% upper 2.5%   LR+  5.00
+#   tap_cdr_length RED   0.0% (0/150)   no RED events in either population
+#   tap_ppc RED          0.0% (0/150)   no RED events in either population
+#   tap_sfvcsp RED       0.0% (0/150)   no RED events in either population
+#   poly_residue_run     mechanism and precedent only, see below
+#
+# The three TAP metrics with no observed RED events stay eligible: a RED means
+# "outside the range spanned by every known therapeutic" regardless of which
+# axis it is on, and costing nothing on natural antibodies is exactly what a
+# gate aimed at generative-model output should do.
+#
+# poly_residue_run is here on MECHANISM AND PRECEDENT. Its motifs occur
+# essentially never in natural antibodies (five consecutive tryptophans: zero
+# of 300), so no natural population can estimate its likelihood ratio at any
+# sample size reachable from PLAbDab. They are generative-model sampling
+# artefacts, and AbSci's Origin-1 pipeline filters its Critical tier outright
+# for the same reason.
+REJECTING_CHECKS = {
+    "sequence_sanity",
+    "v_domain_integrity",
+    "poly_residue_run",
+    "tap_cdr_length",
+    "tap_psh",
+    "tap_ppc",
+    "tap_pnc",
+    "tap_sfvcsp",
+}
+
+# Checks that emit two severities under one name, where only the severe tier
+# rejects. Recorded as a minimum weight because that is set at emission.
+#
+# Found by measurement, not review: an earlier version listed "tap" wholesale,
+# so a TAP AMBER rejected. 46/150 (30.7%) of clinical-stage therapeutics were
+# auto-rejected, 44 on AMBER and zero on RED, against a 5% budget.
+REJECTING_MIN_WEIGHT = {
+    "tap_cdr_length": 6.0,
+    "tap_psh": 6.0,
+    "tap_ppc": 6.0,
+    "tap_pnc": 6.0,
+    "tap_sfvcsp": 6.0,
+    "poly_residue_run": 6.0,
+}
+
+# Hard gates predate this module and used to reject unconditionally, bypassing
+# the budget. Measured for the first time on the same 300 antibodies:
+#
+#   non-standard amino acid     0.0% on known-good, 95% upper 2.5%  keep
+#   CDR-H3 length out of range  0.0% on known-good, 95% upper 2.5%  keep
+#   N-glyc motif inside a CDR   2.7% on known-good, 95% upper 6.7%  DEMOTED
+#
+# The third was rejecting Ispectamab, Zanolimumab and Puxitatug, three named
+# clinical-stage therapeutics. Its point estimate clears 5% but its upper bound
+# does not, and the rule is the upper bound.
+HARD_GATE_CHECKS = {"sequence_sanity"}
+
+# --- Level 4: hold --------------------------------------------------------
+#
+# Deliberately short. If every review check could route here, almost everything
+# would, and the level would mean nothing.
+HOLD_CHECKS = {"disulfide_pairing"}
+
+# --- Level 3: immune risk -------------------------------------------------
+#
+# Axis 2: no repair locus, bears on immunogenicity.
+IMMUNE_RISK_CHECKS = {"humanness", "tap_sfvcsp"}
+
+# --- Shown but never routing ---------------------------------------------
+#
+# Displayed next to the candidate; changes no level on its own. This is where
+# the alert-fatigue remedy lives — a finding with a likelihood ratio near 1
+# that fires on every candidate does not merely waste attention, it trains the
+# reader to ignore the ones that matter.
+#
+#   immunogenicity        LR 0.500 measured — chance
+#   cysteine_pairing      5.3% on known-good, over the rejecting budget
+#   tap_* at AMBER        LR 1.00-2.43, and not repairable by substitution
+#   aggregation, charge   LR 1.00, fire on 100% of both populations
+REVIEW_CHECKS = {
+    "immunogenicity",
+    "immunogenicity_observed",
+    "cysteine_pairing",
+    "n_glycosylation",
+    "aggregation",
+    "charge",
+    "tap_cdr_length",
+    "tap_psh",
+    "tap_ppc",
+    "tap_pnc",
+}
 
 
 @dataclass
 class TriageResult:
     level: int
+    name: str
     action: str
     reasons: list[str] = field(default_factory=list)
     cdr_repairs: int = 0
@@ -162,11 +203,9 @@ class TriageResult:
 
     # There is deliberately no GO / CONDITIONAL / NO-GO property. Collapsing
     # five levels onto three words destroyed the distinction the levels exist
-    # to carry: Level 2 and Level 3 both used to read "CONDITIONAL", but the
-    # difference between them — does the fix land in a CDR, so does affinity
-    # have to be re-measured — is the entire point of separating them. Worse,
-    # framework-repair candidates read as "GO", which invites someone to send
-    # them to the bench unrepaired.
+    # to carry: Level 1 and Level 2 would both have read "CONDITIONAL", but
+    # whether the fix lands in a CDR — and therefore whether affinity has to be
+    # re-measured — is the entire reason they are separate.
 
 
 def _is_rejecting(flag: Flag) -> bool:
@@ -176,78 +215,69 @@ def _is_rejecting(flag: Flag) -> bool:
     return True if minimum is None else flag.weight >= minimum
 
 
-# Hard gates predate this module and used to reject unconditionally, bypassing
-# the false-rejection budget entirely. Measured on the same 300 antibodies:
-#
-#   non-standard amino acid   0.0% on known-good, 95% upper 2.5%  -> keep
-#   CDR-H3 length out of range 0.0% on known-good, 95% upper 2.5% -> keep
-#   N-glyc motif inside a CDR  2.7% on known-good, 95% upper 6.7% -> DEMOTED
-#
-# The third one was rejecting three named clinical-stage therapeutics. It is
-# now a weighted, repairable soft flag in checks.py. The surviving two are
-# listed here so that "what can reject a candidate" is one visible list rather
-# than a severity string scattered across modules.
-HARD_GATE_CHECKS = {"sequence_sanity"}
+def _is_immune_risk(flag: Flag) -> bool:
+    if flag.check == "humanness":
+        return True
+    # SFvCSP only lands here at AMBER; a RED is a Level 5 excursion.
+    if flag.check == "tap_sfvcsp":
+        return flag.weight < REJECTING_MIN_WEIGHT["tap_sfvcsp"]
+    return False
+
+
+def _result(level: int, reasons: list[str], **kwargs) -> "TriageResult":
+    return TriageResult(
+        level=level,
+        name=LEVEL_NAMES[level],
+        action=LEVEL_ACTIONS[level],
+        reasons=reasons,
+        **kwargs,
+    )
 
 
 def triage(flags: list[Flag]) -> TriageResult:
-    """Assign a triage level from a candidate's flags."""
-    hard_gates = [
-        f
-        for f in flags
-        if f.severity == "hard_gate" and f.check in HARD_GATE_CHECKS
-    ]
-    rejecting = hard_gates + [f for f in flags if _is_rejecting(f)]
+    """Assign a triage level. The level is the worst finding, not their sum."""
+    review = [f for f in flags if f.check in REVIEW_CHECKS]
+
+    rejecting = [
+        f for f in flags if f.severity == "hard_gate" and f.check in HARD_GATE_CHECKS
+    ] + [f for f in flags if _is_rejecting(f)]
     if rejecting:
-        return TriageResult(
-            level=5,
-            action=LEVEL_ACTIONS[5],
-            reasons=[f.message for f in rejecting],
-        )
+        return _result(5, [f.message for f in rejecting], review_flags=review)
+
+    holds = [f for f in flags if f.check in HOLD_CHECKS]
+    if holds:
+        return _result(4, [f.message for f in holds], review_flags=review)
+
+    immune = [f for f in flags if _is_immune_risk(f)]
+    if immune:
+        return _result(3, [f.message for f in immune[:2]], review_flags=review)
 
     # Repair cost counts only flags explicitly marked repairable — one point
     # mutation fixes it and the rest of the molecule is unchanged. See the
-    # comment on Flag.repairable in checks.py for why this is a whitelist and
-    # not "everything a resource check emitted".
+    # comment on Flag.repairable in checks.py for why this is a whitelist.
     repairs = [f for f in flags if f.repairable]
     cdr = sum(1 for f in repairs if f.region.startswith("CDR"))
     framework = len(repairs) - cdr
 
-    adjudication = [f for f in flags if _needs_adjudication(f)]
-    review = [f for f in flags if f.check in REVIEW_CHECKS]
-
-    if adjudication:
-        level = 4
-    elif cdr:
-        level = 3
-    elif framework:
-        level = 2
-    else:
-        level = 1
-
-    reasons = []
-    if adjudication:
-        reasons.extend(f.message for f in adjudication[:2])
     if cdr:
-        reasons.append(f"{cdr} repair(s) in a CDR — affinity must be re-measured")
-    if framework:
-        reasons.append(f"{framework} framework repair(s)")
-    if not reasons:
-        reasons.extend(f.message for f in review[:2])
+        return _result(
+            2,
+            [f"{cdr} repair(s) in a CDR — affinity must be re-measured"]
+            + ([f"{framework} framework repair(s)"] if framework else []),
+            cdr_repairs=cdr,
+            framework_repairs=framework,
+            review_flags=review,
+        )
 
-    return TriageResult(
-        level=level,
-        action=LEVEL_ACTIONS[level],
-        reasons=reasons,
-        cdr_repairs=cdr,
+    reasons = (
+        [f"{framework} framework repair(s) — one round, binding untouched"]
+        if framework
+        else ["no repairs needed"]
+    )
+    return _result(
+        1,
+        reasons,
+        cdr_repairs=0,
         framework_repairs=framework,
         review_flags=review,
     )
-
-
-def _needs_adjudication(flag: Flag) -> bool:
-    if flag.check not in ADJUDICATION_CHECKS:
-        return False
-    if flag.check == "humanness":
-        return flag.weight >= HUMANNESS_ADJUDICATION_MIN_WEIGHT
-    return True

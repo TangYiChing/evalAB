@@ -6,25 +6,32 @@ buckets, AUC 0.587, a false-rejection rate that was defined rather than
 measured), so it is now a diagnostic field that nothing branches on. See
 `antibody_prescreen/triage.py` and `docs/triage_implementation_plan.md`.
 
-- **Five triage levels, numbered in the Emergency Severity Index direction**:
-  Level 1 is the candidate you act on first, Level 5 the one you do not pursue.
+- **Five triage levels.** Level 1 is the candidate you act on first, Level 5
+  the one you do not pursue. Note this is the INVERSE of CTAS/ESI severity,
+  where Level 1 is the resuscitation patient: an emergency department spends
+  its scarce resource on the sickest, drug discovery spends bench time on the
+  cleanest, and both mappings cannot be preserved at once.
 
-  | Level | Meaning | What to do |
+  | Level | Name | Condition |
   |---|---|---|
-  | 1 | no repairs needed | straight to the bench |
-  | 2 | framework repairs only | one round of mutagenesis, no re-measurement |
-  | 3 | repairs land in a CDR | re-measure affinity afterwards |
-  | 4 | a human must adjudicate | serious, but not disqualifying |
-  | 5 | crossed a boundary | do not pursue |
+  | 1 | **Ready** | No findings, or only framework-located repairs. One round of point mutagenesis at most; binding untouched, no re-measurement. |
+  | 2 | **Rework** | A repairable liability sits in a CDR or CDR vicinity. Fixable, but the fix may take the binding with it — re-measure affinity. |
+  | 3 | **Immune risk** | A liability with no repair locus bearing on immunogenicity: substantially non-human framework, or Fv-wide charge asymmetry. A re-engineering decision, not a repair. |
+  | 4 | **Hold** | A structural finding that is serious but unresolved — an unpaired cysteine in the predicted fold. A person must decide. |
+  | 5 | **Out of range** | Outside the range spanned by every known therapeutic. The flag names which boundary and by how much. |
+
+  **The level is the worst finding, not the sum of findings** — an emergency
+  department triages a patient with a broken finger and chest pain on the chest
+  pain. That is also why there are no weights in `triage.py`: a max needs none.
 
   A check may only route to Level 5 if the **upper** 95% bound of its
   false-rejection rate on known-good antibodies clears 5% — the trauma-triage
   standard. Measured on 150 clinical-stage therapeutics vs 150 patent-text:
 
-  | | L1 | L2 | L3 | L4 | L5 |
+  | | L1 Ready | L2 Rework | L3 Immune risk | L4 Hold | L5 Out of range |
   |---|---|---|---|---|---|
-  | TheraSAbDab | 0.0% | 19.3% | 72.0% | 6.0% | **2.7%** |
-  | Patent text | 2.0% | 12.7% | 64.7% | 11.3% | **9.3%** |
+  | TheraSAbDab | 16.0% | 60.0% | 16.0% | 5.3% | **2.7%** |
+  | Patent text | 12.7% | 56.7% | 13.3% | 8.0% | **9.3%** |
 
 - **There is no GO / CONDITIONAL / NO-GO verdict any more.** Collapsing five
   levels onto three words destroyed the distinction the levels exist to carry:
@@ -131,7 +138,8 @@ For per-candidate detail beyond the summary line, inspect `result.all_flags`
 |---|---|
 | `numbering.py` | IMGT numbering + CDR/framework region assignment, via ANARCI |
 | `checks.py` | Sequence sanity, cysteine pairing, N-glycosylation, PTM liability (deamidation/isomerization/oxidation), V-domain integrity |
-| `developability.py` | Aggregation propensity (AGGRESCAN, ported from ToolUniverse's antibody-engineering skill) + pI |
+| `developability.py` | `aggregation` (AGGRESCAN, ported from ToolUniverse's antibody-engineering skill) and `charge` (pI), emitted as separate checks — "developability" was too vague a name to act on |
+| `triage.py` | Assigns the triage level: the worst finding, never a sum |
 | `immunogenicity.py` | Non-germline MHC-II binder scan (IEDB prediction + IEDB observed-epitope evidence) |
 | `germline.py` | Per-residue germline / mutated / junctional classification, from ANARCI's own germline tables |
 | `fusion.py` | Combines everything into one verdict + score + top reasons |

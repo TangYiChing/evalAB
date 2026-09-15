@@ -26,14 +26,56 @@ from ..checks import Flag
 AMBER_WEIGHT = 2.0
 RED_WEIGHT = 6.0
 
-# TAP metric name -> short label used in flag messages.
+# TAP metric name -> (short label, which residues it is computed on).
+#
+# The residue set matters for triage, because it decides whether a finding has
+# a CDR/framework locus at all. Verified against the vendored calculators:
+#
+#   Total IMGT CDR Length   res.is_cdr            -> CDR
+#   Hydrophobic Patch (PSH) res.in_cdr_vicinity   -> CDR region
+#   Positive Patch (PPC)    res.in_cdr_vicinity   -> CDR region
+#   Negative Patch (PNC)    res.in_cdr_vicinity   -> CDR region
+#   SFvCSP                  res.is_surface (H+L)  -> WHOLE MOLECULE, no locus
+#
+# So four of the five are CDR-region properties and one is a global surface
+# property. SFvCSP is therefore classified on the immunogenicity axis rather
+# than the repair-locus axis: an Fv-wide charge asymmetry is not something you
+# fix with a substitution.
 METRIC_LABELS = {
     "Total IMGT CDR Length": "total CDR length",
     "Hydrophobic Patch Score": "PSH (CDR-vicinity hydrophobic patch)",
     "Positive Patch Score": "PPC (CDR-vicinity positive patch)",
     "Negative Patch Score": "PNC (CDR-vicinity negative patch)",
-    "SFvCSP": "SFvCSP (Fv charge symmetry)",
+    "SFvCSP": "SFvCSP (Fv-wide charge symmetry)",
 }
+
+NO_LOCUS_METRICS = {"SFvCSP"}
+
+# Green/amber boundaries, copied from the vendored calculators so a flag can
+# report WHAT was crossed and BY HOW MUCH. "crossed a boundary" on its own is
+# not an actionable thing to tell someone.
+METRIC_BOUNDS = {
+    "Total IMGT CDR Length": ((43, 55), (37, 63)),
+    "Hydrophobic Patch Score": ((137.61, 200.71), (106.44, 225.85)),
+    "Positive Patch Score": ((0, 1.19), (0, 3.58)),
+    "Negative Patch Score": ((0, 1.67), (0, 3.50)),
+    "SFvCSP": ((-4.20, 1e5), (-20.50, 1e5)),
+}
+
+
+def describe_excursion(metric: str, value: float, colour: str) -> str:
+    """Say which side of which boundary the value fell, and by how much."""
+    bounds = METRIC_BOUNDS.get(metric)
+    if bounds is None:
+        return f"{value:.2f}"
+    (green_lo, green_hi), (amber_lo, amber_hi) = bounds
+    lo, hi = (amber_lo, amber_hi) if colour == "RED" else (green_lo, green_hi)
+    limit_name = "all known therapeutics" if colour == "RED" else "the green range"
+    if value > hi:
+        return f"{value:.2f}, above the {hi:g} upper bound of {limit_name}"
+    if value < lo:
+        return f"{value:.2f}, below the {lo:g} lower bound of {limit_name}"
+    return f"{value:.2f}"
 
 
 class TapError(Exception):
@@ -111,14 +153,31 @@ def tap_flags(profile: TapProfile) -> list[Flag]:
         if colour == "GREEN":
             continue
         label = METRIC_LABELS.get(metric, metric)
-        value = profile.values.get(metric)
+        value = profile.values.get(metric, float("nan"))
+        # One check name per metric, so each can be measured and routed on its
+        # own. "any TAP RED" was a single gate whose likelihood ratio of 11 was
+        # carried entirely by PSH and PNC — measured on 300 antibodies, CDR
+        # length, PPC and SFvCSP produced zero RED events in either group.
         flags.append(
             Flag(
-                check="tap",
+                check=f"tap_{_slug(metric)}",
                 severity="soft",
-                region="structure",
-                message=f"TAP {colour.lower()} flag: {label} = {value:.2f}",
+                region="structure" if metric in NO_LOCUS_METRICS else "CDR-region",
+                message=(
+                    f"{label} is {colour.lower()}: "
+                    f"{describe_excursion(metric, value, colour)}"
+                ),
                 weight=RED_WEIGHT if colour == "RED" else AMBER_WEIGHT,
             )
         )
     return flags
+
+
+def _slug(metric: str) -> str:
+    return {
+        "Total IMGT CDR Length": "cdr_length",
+        "Hydrophobic Patch Score": "psh",
+        "Positive Patch Score": "ppc",
+        "Negative Patch Score": "pnc",
+        "SFvCSP": "sfvcsp",
+    }.get(metric, metric.lower().replace(" ", "_"))

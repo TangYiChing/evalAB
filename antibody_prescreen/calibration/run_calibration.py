@@ -44,15 +44,16 @@ TAP_METRICS = [
 # re-scoring the population. lr_report.py reads every flag_* column.
 CHECK_NAMES = [
     "sequence_sanity", "cysteine_pairing", "n_glycosylation", "ptm_liability",
-    "v_domain_integrity", "poly_residue_run", "developability", "humanness",
-    "tap", "disulfide_pairing", "immunogenicity", "immunogenicity_observed",
+    "v_domain_integrity", "poly_residue_run", "aggregation", "charge",
+    "humanness", "disulfide_pairing", "immunogenicity", "immunogenicity_observed",
+    "tap_cdr_length", "tap_psh", "tap_ppc", "tap_pnc", "tap_sfvcsp",
 ]
 
 FIELDNAMES = (
-    ["candidate_id", "pairing", "triage_level", "cdr_repairs",
+    ["candidate_id", "pairing", "triage_level", "triage_name", "cdr_repairs",
      "framework_repairs", "total_score", "tier1_score", "error"]
     + [f"flag_{c}" for c in CHECK_NAMES]
-    + ["flag_tap_any_red", "model_conf_max", "model_conf_mean", "vh_germline_identity"]
+    + ["model_conf_max", "model_conf_mean", "vh_germline_identity"]
     + ["tap_" + m.split()[0].lower() for m in TAP_METRICS]
     + ["tap_flag_" + m.split()[0].lower() for m in TAP_METRICS]
     + [
@@ -100,14 +101,12 @@ def score_one(candidate: dict, model_cache: str) -> dict:
 
     if result.triage_result is not None:
         row["triage_level"] = result.triage_result.level
+        row["triage_name"] = result.triage_result.name
         row["cdr_repairs"] = result.triage_result.cdr_repairs
         row["framework_repairs"] = result.triage_result.framework_repairs
     fired = {f.check for f in result.all_flags}
     for name in CHECK_NAMES:
         row[f"flag_{name}"] = int(name in fired)
-    row["flag_tap_any_red"] = int(
-        bool(result.tap_profile) and result.tap_profile.n_red > 0
-    )
     if result.model_confidence:
         row["model_conf_max"] = round(result.model_confidence.get("max") or 0, 4)
         row["model_conf_mean"] = round(result.model_confidence.get("mean") or 0, 4)
@@ -117,7 +116,9 @@ def score_one(candidate: dict, model_cache: str) -> dict:
     if result.error:
         row["error"] = result.error
 
-    tap_weight = sum(f.weight for f in result.all_flags if f.check == "tap")
+    tap_weight = sum(
+        f.weight for f in result.all_flags if f.check.startswith("tap_")
+    )
     immuno_flags = [f for f in result.all_flags if f.check == "immunogenicity"]
     observed_flags = [f for f in result.all_flags if f.check == "immunogenicity_observed"]
     immuno_weight = sum(f.weight for f in immuno_flags + observed_flags)
