@@ -40,8 +40,19 @@ TAP_METRICS = [
     "SFvCSP",
 ]
 
+# Per-check boolean columns so likelihood ratios can be recomputed without
+# re-scoring the population. lr_report.py reads every flag_* column.
+CHECK_NAMES = [
+    "sequence_sanity", "cysteine_pairing", "n_glycosylation", "ptm_liability",
+    "v_domain_integrity", "poly_residue_run", "developability", "humanness",
+    "tap", "disulfide_pairing", "immunogenicity", "immunogenicity_observed",
+]
+
 FIELDNAMES = (
-    ["candidate_id", "pairing", "verdict", "total_score", "tier1_score", "error"]
+    ["candidate_id", "pairing", "verdict", "triage_level", "cdr_repairs",
+     "framework_repairs", "total_score", "tier1_score", "error"]
+    + [f"flag_{c}" for c in CHECK_NAMES]
+    + ["flag_tap_any_red", "model_conf_max", "model_conf_mean", "vh_germline_identity"]
     + ["tap_" + m.split()[0].lower() for m in TAP_METRICS]
     + ["tap_flag_" + m.split()[0].lower() for m in TAP_METRICS]
     + [
@@ -88,6 +99,19 @@ def score_one(candidate: dict, model_cache: str) -> dict:
         return row
 
     row["verdict"] = result.verdict
+    if result.triage_result is not None:
+        row["triage_level"] = result.triage_result.level
+        row["cdr_repairs"] = result.triage_result.cdr_repairs
+        row["framework_repairs"] = result.triage_result.framework_repairs
+    fired = {f.check for f in result.all_flags}
+    for name in CHECK_NAMES:
+        row[f"flag_{name}"] = int(name in fired)
+    row["flag_tap_any_red"] = int(
+        bool(result.tap_profile) and result.tap_profile.n_red > 0
+    )
+    if result.model_confidence:
+        row["model_conf_max"] = round(result.model_confidence.get("max") or 0, 4)
+        row["model_conf_mean"] = round(result.model_confidence.get("mean") or 0, 4)
     row["total_score"] = "" if result.score == float("inf") else round(result.score, 3)
     row["structure_available"] = int(result.structure_available)
     row["immunogenicity_available"] = int(result.immunogenicity_available)
@@ -118,6 +142,10 @@ def score_one(candidate: dict, model_cache: str) -> dict:
         chains = number_antibody(candidate["vh_sequence"], candidate["vl_sequence"])
         row["vh_v_gene"] = chains["VH"].v_gene or ""
         row["vl_v_gene"] = chains["VL"].v_gene or ""
+        from ..humanness import germline_identity
+        h = germline_identity(chains["VH"])
+        if h.available and h.identity is not None:
+            row["vh_germline_identity"] = round(h.identity, 4)
     except NumberingError:
         pass
 

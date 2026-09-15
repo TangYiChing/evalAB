@@ -197,7 +197,10 @@ def test_injected_negative_patch_is_caught(tmp_path):
 
     tap_messages = [f.message for f in result.all_flags if f.check == "tap"]
     assert len(tap_messages) == 2
-    assert format_report([result]).count("| TAP |") == 1
+    # A TAP RED is a Level 1 boundary crossing: 0 of 150 clinical-stage
+    # therapeutics carry one.
+    assert result.triage_result.level == 1
+    assert "PNC" in format_report([result])
 
 
 @pytest.mark.slow
@@ -210,3 +213,54 @@ def test_model_cache_is_reused(tmp_path):
     second = build_model(VH_REF, VL_REF, cache_dir=tmp_path)
     assert first == second
     assert second.stat().st_mtime_ns == mtime, "cached model was rebuilt"
+
+
+# --- structural disulfide pairing -----------------------------------------
+
+
+@pytest.mark.slow
+@needs_immunebuilder
+def test_reference_pair_has_both_canonical_disulfides(tmp_path):
+    """H23-H104 and L23-L104 are the intradomain disulfides of a V domain."""
+    from antibody_prescreen.structure import build_model
+    from antibody_prescreen.structure.disulfide import find_disulfides
+
+    result = find_disulfides(build_model(VH_REF, VL_REF, cache_dir=tmp_path))
+
+    assert result.available
+    assert result.unpaired == []
+    pairs = {tuple(sorted(p)) for p in result.pairs}
+    assert ("H104", "H23") in pairs
+    assert ("L104", "L23") in pairs
+
+
+@pytest.mark.slow
+@needs_immunebuilder
+def test_structure_names_the_unpaired_cysteine(tmp_path):
+    """The point of the structural check: it says WHICH cysteine is free.
+
+    The sequence-level check can only report that the total count is odd.
+    """
+    from antibody_prescreen.structure import build_model
+    from antibody_prescreen.structure.disulfide import find_disulfides
+
+    broken = VH_REF.replace("GFNIKDTY", "GFNIKDTC")
+    result = find_disulfides(build_model(broken, VL_REF, cache_dir=tmp_path))
+
+    assert result.unpaired == ["H38"]
+    assert len(result.pairs) == 2  # the two canonical ones survive
+
+
+@pytest.mark.slow
+@needs_immunebuilder
+def test_model_confidence_is_captured_and_is_not_ptm(tmp_path):
+    from antibody_prescreen.structure import build_model
+    from antibody_prescreen.structure.modelling import model_confidence
+
+    confidence = model_confidence(build_model(VH_REF, VL_REF, cache_dir=tmp_path))
+
+    assert confidence is not None
+    assert confidence["not_ptm"] is True
+    assert confidence["metric"] == "abodybuilder2_ensemble_rmsd_angstrom"
+    assert set(confidence["per_residue"]) == {"H", "L"}
+    assert 0 < confidence["mean"] < 5.0

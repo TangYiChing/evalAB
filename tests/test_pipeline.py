@@ -81,12 +81,32 @@ class TestChecks:
         soft_cys_flags = [f for f in result.soft_flags if f.check == "cysteine_pairing"]
         assert any("odd cysteine count" in f.message for f in soft_cys_flags)
 
-    def test_cdr_n_glycosylation_hard_gates(self):
+    def test_cdr_n_glycosylation_is_caught_but_does_not_hard_gate(self):
+        """A CDR N-glyc motif is flagged and repairable, not a hard gate.
+
+        This deliberately changed. It used to assert a hard gate. Measured on
+        150 clinical-stage therapeutics, a CDR N-glyc motif fires on 2.7% of
+        them — Ispectamab, Zanolimumab and Puxitatug all carry one. The point
+        estimate clears the 5% false-rejection budget but the 95% upper bound
+        is 6.7%, and the rule is that the upper bound must clear it.
+
+        It is also one substitution away from fixed, which makes it a repair
+        cost rather than a rejection.
+        """
         # Insert an N-x-S/T motif into CDR-H1 (GFNIKDTY -> GFNISDTY: N-I-S).
         broken_vh = VH_REF.replace("GFNIKDTY", "GFNISDTY")
         chains = number_antibody(broken_vh, VL_REF)
         result = run_all_checks(chains["VH"], "VH")
-        assert any(f.check == "n_glycosylation" for f in result.hard_gates)
+
+        motif_flags = [
+            f
+            for f in result.flags
+            if f.check == "n_glycosylation" and f.region.startswith("CDR")
+        ]
+        assert motif_flags, "the motif must still be detected"
+        assert all(f.severity == "soft" for f in motif_flags)
+        assert all(f.repairable for f in motif_flags)
+        assert not result.hard_gates
 
     def test_ptm_liability_detects_deamidation_motif(self):
         chains = number_antibody(VH_REF, VL_REF)
@@ -125,12 +145,25 @@ class TestFusion:
         assert result.score != float("inf"), "score is inf only when hard-gated"
         assert not [f for f in result.all_flags if f.severity == "hard_gate"]
 
-    def test_broken_cysteine_pair_is_no_go_but_via_score_not_hard_gate(self):
+    def test_odd_cysteine_does_not_auto_reject(self):
+        """An odd cysteine count must NOT reject on its own.
+
+        This deliberately changed. It used to assert NO-GO. Measured on 150
+        clinical-stage therapeutics, `cysteine_pairing` fires on 5.3% of
+        them — above the 5% false-rejection budget — so it is not eligible
+        to be a Level 1 gate. Sequence alone can only say "the total is odd",
+        which is true of real approved molecules carrying a non-canonical
+        disulfide.
+
+        The question it cannot answer — *which* cysteine is unpaired — needs a
+        structure, and is tested in test_structure.py.
+        """
         broken_vh = VH_REF.replace("GFNIKDTY", "GFNIKDTC")
         result = screen_candidate("test", broken_vh, VL_REF, run_immunogenicity=False)
-        assert result.verdict == "NO-GO"
-        assert result.score != float("inf")  # soft-scored, not hard-gated
-        assert "cysteine" in result.top_reasons[0].lower()
+
+        assert result.triage_result.level != 1, "must not auto-reject"
+        assert result.score != float("inf")
+        assert any(f.check == "cysteine_pairing" for f in result.all_flags)
 
     def test_garbage_input_is_error_not_crash(self):
         result = screen_candidate("test", "NOTANANTIBODY", VL_REF, run_immunogenicity=False)
@@ -159,7 +192,17 @@ class TestFusion:
         results = screen_batch(candidates, run_immunogenicity=False)
         by_id = {r.candidate_id: r for r in results}
 
-        assert by_id["broken_cys"].verdict == "NO-GO"
-        # The double-CDR-liability variant must score worse (higher) than
-        # the clean baseline — this is the core ordering property to guard.
-        assert by_id["extra_cdr_liability"].score > by_id["clean"].score
+        # No candidate here crosses a Level 1 boundary: none has a broken fold,
+        # a non-standard residue, or a poly-residue CDR run. An odd cysteine
+        # count is a Level 2 observation, not a rejection — see
+        # test_odd_cysteine_does_not_auto_reject.
+        assert all(r.triage_result.level != 1 for r in results)
+
+        # The ordering property is still the thing to guard: the variant with
+        # an extra CDR liability must carry more repair cost than the clean
+        # baseline. Asserted on repair count now rather than on the summed
+        # score, because nothing routes on the score any more.
+        assert (
+            by_id["extra_cdr_liability"].triage_result.cdr_repairs
+            > by_id["clean"].triage_result.cdr_repairs
+        )

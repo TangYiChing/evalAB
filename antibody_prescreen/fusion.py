@@ -13,6 +13,8 @@ branch, so a Tier-1-only user never needs them installed.
 from dataclasses import dataclass, field
 
 from .checks import Flag, run_all_checks
+from .humanness import germline_identity, humanness_flags
+from .triage import TriageResult, triage
 from .immunogenicity import check_immunogenicity
 from .numbering import NumberingError, number_antibody
 
@@ -66,6 +68,8 @@ class CandidateResult:
     immunogenicity_available: bool = False
     structure_available: bool = False
     tap_profile: "TapProfile | None" = None  # noqa: F821 - lazy Tier 2 import
+    triage_result: TriageResult | None = None
+    model_confidence: dict | None = None
 
 
 def _top_reasons(flags: list[Flag], n: int = 2) -> list[str]:
@@ -114,6 +118,8 @@ def screen_candidate(
         result = run_all_checks(chain, chain_name)
         all_flags.extend(result.flags)
 
+        all_flags.extend(humanness_flags(germline_identity(chain), chain_name))
+
         if run_immunogenicity:
             immuno_result = check_immunogenicity(
                 chain, chain_name, cache_dir=iedb_cache
@@ -123,6 +129,7 @@ def screen_candidate(
 
     structure_available = False
     tap_profile = None
+    model_conf = None
     if run_structure:
         # Imported here, not at module scope: Tier 2 pulls in torch /
         # ImmuneBuilder / OpenMM, and Tier-1-only users must not need them.
@@ -141,6 +148,15 @@ def screen_candidate(
             tap_profile = run_tap_profile(model_path)
             all_flags.extend(tap_flags(tap_profile))
             structure_available = True
+
+            # Structure-based disulfide pairing supersedes the sequence-level
+            # cysteine count, which can only say "the total is odd" and fires
+            # on 5.3% of clinical-stage therapeutics.
+            from .structure.disulfide import disulfide_flags, find_disulfides
+            from .structure.modelling import model_confidence as _confidence
+
+            all_flags.extend(disulfide_flags(find_disulfides(model_path)))
+            model_conf = _confidence(model_path)
         except (ModellingError, TapError) as e:
             # Degrade to Tier 1 for this candidate rather than failing the
             # batch. The flag records *why* there is no structure signal, so
@@ -155,39 +171,23 @@ def screen_candidate(
                 )
             )
 
-    hard_gates = [f for f in all_flags if f.severity == "hard_gate"]
+    # Routing is by triage level, not by the summed score. `score` is kept as
+    # a diagnostic only — nothing branches on it. See triage.py for why.
+    triage_result = triage(all_flags)
     soft_flags = [f for f in all_flags if f.severity == "soft"]
-
-    if hard_gates:
-        return CandidateResult(
-            candidate_id=candidate_id,
-            verdict="NO-GO",
-            score=float("inf"),
-            top_reasons=[hard_gates[0].message],
-            all_flags=all_flags,
-            immunogenicity_available=immuno_available,
-            structure_available=structure_available,
-            tap_profile=tap_profile,
-        )
-
     score = sum(f.weight for f in soft_flags)
-
-    if score < T_LOW:
-        verdict = "GO"
-    elif score < T_HIGH:
-        verdict = "CONDITIONAL"
-    else:
-        verdict = "NO-GO"
 
     return CandidateResult(
         candidate_id=candidate_id,
-        verdict=verdict,
-        score=round(score, 2),
-        top_reasons=_top_reasons(soft_flags) if verdict != "GO" else [],
+        verdict=triage_result.verdict,
+        score=float("inf") if triage_result.level == 1 else round(score, 2),
+        top_reasons=triage_result.reasons[:2],
         all_flags=all_flags,
         immunogenicity_available=immuno_available,
         structure_available=structure_available,
         tap_profile=tap_profile,
+        triage_result=triage_result,
+        model_confidence=model_conf,
     )
 
 
@@ -251,29 +251,30 @@ def format_report(results: list[CandidateResult]) -> str:
     structure profile — a Tier-1-only run keeps exactly the table it had
     before Tier 2 existed.
     """
-    order = {"GO": 0, "CONDITIONAL": 1, "NO-GO": 2, "ERROR": 3}
-    ranked = sorted(results, key=lambda r: (order[r.verdict], r.score))
+    def sort_key(r):
+        if r.verdict == "ERROR":
+            return (99, 0)
+        level = r.triage_result.level if r.triage_result else 3
+        # Level 5 is the best outcome, so invert for display order.
+        return (0 if level == 1 else 1, -level if level > 1 else 0)
 
-    show_tap = any(r.structure_available for r in results)
-
-    if show_tap:
-        lines = [
-            "| Candidate | Verdict | Score | TAP | Why |",
-            "|---|---|---|---|---|",
-        ]
-    else:
-        lines = ["| Candidate | Verdict | Score | Why |", "|---|---|---|---|"]
-
+    ranked = sorted(results, key=sort_key)
+    lines = [
+        "| Candidate | Level | What to do | Repairs | Why |",
+        "|---|---|---|---|---|",
+    ]
     for r in ranked:
-        score_str = "—" if r.score == float("inf") else str(r.score)
-        why = "; ".join(r.top_reasons) if r.top_reasons else "—"
-        if show_tap:
-            tap = r.tap_profile.summary() if r.tap_profile is not None else "n/a"
-            lines.append(
-                f"| {r.candidate_id} | **{r.verdict}** | {score_str} | {tap} | {why} |"
-            )
-        else:
-            lines.append(
-                f"| {r.candidate_id} | **{r.verdict}** | {score_str} | {why} |"
-            )
+        if r.triage_result is None:
+            lines.append(f"| {r.candidate_id} | ERROR | {r.error or '—'} | — | — |")
+            continue
+        t = r.triage_result
+        repairs = (
+            f"{t.cdr_repairs} CDR / {t.framework_repairs} FR"
+            if t.level != 1
+            else "—"
+        )
+        why = "; ".join(t.reasons[:2]) if t.reasons else "—"
+        lines.append(
+            f"| {r.candidate_id} | **L{t.level}** | {t.action} | {repairs} | {why} |"
+        )
     return "\n".join(lines)
