@@ -80,7 +80,9 @@ def is_human_framework(vh: str, vl: str) -> bool:
     return chains["VH"].v_species == "human" and chains["VL"].v_species == "human"
 
 
-def score_one(candidate: dict, model_cache: str) -> dict:
+def score_one(
+    candidate: dict, model_cache: str, run_immunogenicity: bool = True
+) -> dict:
     """Score one candidate and flatten every component into a flat row."""
     row = {name: "" for name in FIELDNAMES}
     row["candidate_id"] = candidate["candidate_id"]
@@ -91,7 +93,7 @@ def score_one(candidate: dict, model_cache: str) -> dict:
             candidate["candidate_id"],
             candidate["vh_sequence"],
             candidate["vl_sequence"],
-            run_immunogenicity=True,
+            run_immunogenicity=run_immunogenicity,
             run_structure=True,
             model_cache=model_cache,
         )
@@ -152,6 +154,41 @@ def score_one(candidate: dict, model_cache: str) -> dict:
     return row
 
 
+def build_validation_population(
+    exclude_ids: set[str], pairing: str, include_non_human: bool
+) -> list[dict]:
+    """Every entry of one pairing class except the ones already spent.
+
+    Used for external validation: a gate derived on one sample cannot be
+    validated on that same sample, so the derivation IDs are excluded by name
+    rather than by re-sampling with a different seed, which would overlap.
+    """
+    df = load_paired_sequences()
+    df = df[df["pairing"] == pairing]
+    df = df.dropna(subset=["heavy_sequence", "light_sequence"])
+    df = df[
+        (df["heavy_sequence"].str.len() >= 90) & (df["light_sequence"].str.len() >= 90)
+    ]
+    df = df.drop_duplicates(subset=["heavy_sequence", "light_sequence"])
+    df = df[~df["ID"].isin(exclude_ids)]
+
+    population = []
+    for record in df.itertuples():
+        human = is_human_framework(record.heavy_sequence, record.light_sequence)
+        if not include_non_human and not human:
+            continue
+        population.append(
+            {
+                "candidate_id": str(record.ID),
+                "vh_sequence": record.heavy_sequence,
+                "vl_sequence": record.light_sequence,
+                "pairing": "human_framework" if human else "non_human_framework",
+            }
+        )
+    print(f"  validation population: {len(population)}", file=sys.stderr)
+    return population
+
+
 def build_population(
     n_per_group: int, seed: int, include_non_human: bool
 ) -> list[dict]:
@@ -209,13 +246,38 @@ def main() -> None:
         help="how many times to rebuild the pool after a worker dies",
     )
     parser.add_argument(
+        "--exclude-ids",
+        type=Path,
+        help="CSV of already-spent candidates; their candidate_id values are "
+             "excluded. Turns this into a validation run.",
+    )
+    parser.add_argument(
+        "--pairing", default=THERAPEUTIC_PAIRING,
+        help="single pairing class to score, for validation runs",
+    )
+    parser.add_argument(
+        "--no-immunogenicity", action="store_true",
+        help="skip the IEDB checks. They are report-only and route to no "
+             "level, so this cannot change a triage assignment.",
+    )
+    parser.add_argument(
         "--model-cache",
         default=str(Path.home() / ".cache" / "evalab" / "model_cache"),
     )
     args = parser.parse_args()
 
     print("Building population...", file=sys.stderr)
-    population = build_population(args.n_per_group, args.seed, args.include_non_human)
+    if args.exclude_ids:
+        with open(args.exclude_ids, newline="") as handle:
+            spent = {r["candidate_id"] for r in csv.DictReader(handle)}
+        print(f"  excluding {len(spent)} already-spent candidates", file=sys.stderr)
+        population = build_validation_population(
+            spent, args.pairing, args.include_non_human
+        )
+    else:
+        population = build_population(
+            args.n_per_group, args.seed, args.include_non_human
+        )
 
     # Resume support, and the reason it exists: a 300-candidate run holds
     # torch + ABodyBuilder2 weights + OpenMM in every worker, and on a 16GB
@@ -257,7 +319,10 @@ def main() -> None:
             try:
                 with ProcessPoolExecutor(max_workers=args.workers) as pool:
                     futures = {
-                        pool.submit(score_one, candidate, args.model_cache): candidate
+                        pool.submit(
+                            score_one, candidate, args.model_cache,
+                            not args.no_immunogenicity,
+                        ): candidate
                         for candidate in remaining
                     }
                     for future in as_completed(futures):
