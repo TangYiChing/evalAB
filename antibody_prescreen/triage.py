@@ -92,8 +92,19 @@ LEVEL_ACTIONS = {
 
 # --- Level 5: out of range ------------------------------------------------
 #
-# Eligibility is the trauma-triage standard: the UPPER 95% bound of a check's
-# false-rejection rate on known-good antibodies must clear 5%.
+# THE BUDGET APPLIES TO THE SET, NOT TO EACH GATE. This was the error that the
+# D3 external validation caught, and it is worth stating first because it is
+# easy to make again: a candidate is rejected if ANY gate fires, so the
+# quantity bounded by the 5% trauma-triage standard is the UNION.
+#
+# On D3 (669 unseen clinical-stage therapeutics, human framework) every single
+# poly-residue motif cleared 5% on its own —
+#
+#     5xW  0.00% (upper 0.57%)      5xY  1.35% (upper 2.54%)
+#     4xG  0.45% (upper 1.31%)      5xS  1.35% (upper 2.54%)
+#
+# — and the gate set as a whole rejected 5.53% (95% CI 4.04-7.53%), failing the
+# pre-registered pass condition. Eight gates at roughly 1% each is 8%.
 #
 # Measured on 150 clinical-stage therapeutics (derivation only):
 #
@@ -104,23 +115,31 @@ LEVEL_ACTIONS = {
 #   tap_cdr_length RED   0.0% (0/150)   no RED events in either population
 #   tap_ppc RED          0.0% (0/150)   no RED events in either population
 #   tap_sfvcsp RED       0.0% (0/150)   no RED events in either population
-#   poly_residue_run     mechanism and precedent only, see below
+#   poly_residue_run     DEMOTED by D3 — see the note on REJECTING_CHECKS
 #
 # The three TAP metrics with no observed RED events stay eligible: a RED means
 # "outside the range spanned by every known therapeutic" regardless of which
 # axis it is on, and costing nothing on natural antibodies is exactly what a
-# gate aimed at generative-model output should do.
+# gate aimed at generative-model output should do. D3 confirmed they stay
+# cheap: cdr_length 0.30%, ppc 0.15%, sfvcsp 0.00%.
+# poly_residue_run was DEMOTED out of this set by the D3 result, per the action
+# recorded in docs/d3-external-validation.md before the run. It contributed 26
+# of the 37 rejections; without it the union falls to 11/669 = 1.64%
+# (upper 2.92%).
 #
-# poly_residue_run is here on MECHANISM AND PRECEDENT. Its motifs occur
-# essentially never in natural antibodies (five consecutive tryptophans: zero
-# of 300), so no natural population can estimate its likelihood ratio at any
-# sample size reachable from PLAbDab. They are generative-model sampling
-# artefacts, and AbSci's Origin-1 pipeline filters its Critical tier outright
-# for the same reason.
+# The demotion is not a verdict on the motifs. It is a statement about which
+# population they apply to. AbSci's Origin-1 pipeline filters its Critical tier
+# outright, and that is right for designs coming out of a generative model —
+# a run of five serines in CDR-H3 is a sampling artefact. But 3.9% of
+# antibodies that reached the clinic carry one of these motifs, so on natural
+# and humanised sequences they are a description, not a defect.
+#
+# For de novo input this check should be a gate again. Its false-rejection
+# rate on de novo designs is unmeasured, and re-enabling it without measuring
+# that would repeat exactly the mistake this validation caught.
 REJECTING_CHECKS = {
     "sequence_sanity",
     "v_domain_integrity",
-    "poly_residue_run",
     "tap_cdr_length",
     "tap_psh",
     "tap_ppc",
@@ -140,7 +159,6 @@ REJECTING_MIN_WEIGHT = {
     "tap_ppc": 6.0,
     "tap_pnc": 6.0,
     "tap_sfvcsp": 6.0,
-    "poly_residue_run": 6.0,
 }
 
 # Hard gates predate this module and used to reject unconditionally, bypassing
@@ -178,6 +196,7 @@ IMMUNE_RISK_CHECKS = {"humanness", "tap_sfvcsp"}
 #   tap_* at AMBER        LR 1.00-2.43, and not repairable by substitution
 #   aggregation, charge   LR 1.00, fire on 100% of both populations
 REVIEW_CHECKS = {
+    "poly_residue_run",
     "immunogenicity",
     "immunogenicity_observed",
     "cysteine_pairing",

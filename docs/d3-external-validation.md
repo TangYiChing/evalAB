@@ -89,3 +89,114 @@ throttling during Step 7, and re-introducing that risk buys nothing here.
 D2's numbers were produced with immunogenicity enabled. Since those checks
 route nothing, the Level 5 comparison is unaffected; the Level 1-4
 distribution is comparable but not identical, and is reported as secondary.
+
+---
+
+# RESULT — appended after the run
+
+Nothing above this line was edited. Gate set as frozen at `a19808e`;
+per-candidate data in `d3-external-validation-results.csv`.
+
+## The pre-registered pass condition was not met
+
+| Arm | n | Level 5 | 95% CI | Budget (upper bound < 5%) |
+|---|---|---|---|---|
+| **human framework (primary)** | 669 | **5.53%** (37) | 4.04 – 7.53% | **FAIL** |
+| non-human framework (secondary) | 250 | 2.00% (5) | 0.86 – 4.60% | pass |
+
+D2 predicted 2–5% on the primary arm. The observed 5.53% exceeds the budget on
+the point estimate, not merely on the upper bound — the gate set rejects
+roughly twice as many unseen clinical-stage therapeutics as the derivation
+sample suggested it would.
+
+## Which gate carried the excess
+
+Per-gate rates on the 669 human-framework therapeutics:
+
+| Gate | D3 rate | D2 rate |
+|---|---|---|
+| **poly_residue_run** | **19.88%** (any tier) | 2.0% |
+| tap_psh RED | 0.90% | 0.0% |
+| v_domain_integrity | 0.75% | 0.7% |
+| tap_pnc RED | 0.60% | 0.0% |
+| tap_cdr_length RED | 0.30% | 0.0% |
+| sequence_sanity | 0.15% | 0.0% |
+| tap_ppc RED | 0.15% | 0.0% |
+| tap_sfvcsp RED | 0.00% | 0.0% |
+
+## The real error: the budget was applied per gate, not to the union
+
+Broken down per motif, **every AbSci Critical liability clears 5% on its own**:
+
+| Motif | D3 rate | 95% upper |
+|---|---|---|
+| 5×W | 0.00% | 0.57% |
+| 4×G | 0.45% | 1.31% |
+| 5×Y | 1.35% | 2.54% |
+| 5×S | 1.35% | 2.54% |
+
+And yet the set failed. A candidate is rejected if **any** gate fires, so the
+quantity the 5% standard bounds is the union — and eight gates at roughly 1%
+each is 8%. Both the plan document and the pre-registration stated the rule
+per check ("a check may only enter Level 5 if its false-rejection rate clears
+5%"), which is not the constraint that governs what actually happens to a
+candidate.
+
+This is the most useful thing the run produced, and it would not have shown up
+in any amount of review of the derivation numbers: on D2 the union happened to
+stay under budget, so the distinction never bit.
+
+## Action taken — the one recorded in advance
+
+`poly_residue_run` demoted out of the rejecting set to review-only. It
+contributed 26 of the 37 rejections. Recomputing the union with the remaining
+gates:
+
+| Arm | n | Level 5 | 95% CI | Budget |
+|---|---|---|---|---|
+| human framework | 669 | **2.54%** (17) | 1.59 – 4.03% | **PASS** |
+| non-human framework | 250 | 1.60% (4) | 0.62 – 4.04% | pass |
+
+No threshold was widened and D3 was not re-sampled, which the pre-registration
+ruled out in advance.
+
+**This 2.54% is not an independent validation.** It is the post-demotion rate
+on the same data that prompted the demotion. The surviving gate set has been
+validated to the extent that its failure mode was found and removed; confirming
+the corrected set needs a population it has not touched.
+
+## What the demotion does and does not mean
+
+It is not a verdict on the motifs. It is a statement about which population
+they describe. AbSci filters its Critical tier outright when selecting designs
+out of a generative model, and that remains right: a run of five serines in
+CDR-H3 is a sampling artefact a language model produces and evolution does
+not. But **3.9% of antibodies that reached the clinic carry one**, so against
+natural and humanised sequences the motifs are a description rather than a
+defect.
+
+For de novo input this check should be a gate again. Its false-rejection rate
+on de novo designs is unmeasured, and re-enabling it without measuring that
+would repeat the mistake this run caught.
+
+## Secondary observations
+
+The non-human arm passed at 2.00% and was never derived on, which makes it the
+closest thing here to a clean test of the non-poly gates. Its level
+distribution is very different — 70.0% at Level 3 (Immune risk) against 15.8%
+for the human arm — which is the germline-identity check doing exactly what it
+is for.
+
+`tap_psh` RED fired on 0.90% of unseen therapeutics after 0/150 on D2. Still
+comfortably inside budget, but a reminder that a zero on 150 does not mean a
+zero.
+
+## What is now spent, and what is left
+
+D3 is spent. The derivation set D2 was already spent. **The corrected gate set
+has no unused population left to validate it against.** D4 (background arm) can
+measure over-triage but not under-triage, since it contains no known-good
+antibodies.
+
+Options, in order of preference: PLAbDab's `Xtal structure` pairing class as a
+third known-good-ish population; a fresh PLAbDab release; or wet-lab outcomes.
