@@ -1,10 +1,10 @@
 """IMGT numbering and CDR/framework boundary assignment, via ANARCI.
 
-Every other Tier 1 check (PTM liability, N-glyc, immunogenicity, aggregation
-region weighting) needs to know which residues sit in a CDR vs a framework
-region. This module is the single place that answers that question, so a
-future swap to AbNumber or a different numbering scheme only touches this
-file.
+Every Tier 1 measurement that is region-aware (PTM liability, N-glycosylation
+motifs, CDR length and charge, aggregation) needs to know which residues sit
+in a CDR and which in a framework. This module is the single place that
+answers that question, so swapping to AbNumber or to a different numbering
+scheme touches this file and no other.
 """
 
 from dataclasses import dataclass
@@ -91,8 +91,9 @@ def number_chain(sequence: str, expect_chain_type: str | None = None) -> Numbere
 
     # assign_germline=True makes ANARCI also report the closest germline V/J
     # gene. It costs one extra alignment inside the same call — cheaper than
-    # running ANARCI twice, and immunogenicity.py needs it to tell a
-    # self/tolerised residue apart from an engineered one.
+    # running ANARCI twice — and the germline call is what `profile.py` uses
+    # for germline identity and what the reference fit uses to filter to
+    # human chains.
     _, numbered, alignment_details, _ = run_anarci(
         [("query", sequence)], scheme="imgt", assign_germline=True
     )

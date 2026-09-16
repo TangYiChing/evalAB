@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="720" viewBox="0 0 1060 720" role="img" aria-labelledby="f1t f1d">
+<title id="f1t">Figure 1 — evalAB triage matrix</title>
+<desc id="f1d">Each finding on a paired human VH/VL candidate is placed on two axes: how far it deviates from a stated reference range, and what repairing it would cost. The cell gives an action level from 1 to 5. The candidate takes the maximum level over its findings. There is no score and no good-bad axis.</desc>
+<style>
+ text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;fill:#1d2f3f}
+ .h1{font-size:25px;font-weight:700}
+ .sub{font-size:14.5px;fill:#4a6076}
+ .axis{font-size:15px;font-weight:700;fill:#2b4257}
+ .tick{font-size:12px;fill:#44596d}
+ .lvl{font-size:19px;font-weight:700}
+ .lname{font-size:10.5px;font-weight:600}
+ .note{font-size:12.5px;fill:#44596d}
+ .rule{font-size:13.5px;fill:#1d2f3f}
+</style>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text class="h1" x="40" y="46">evalAB — triage by deviation × repair cost, not by score</text>
+<text class="sub" x="40" y="72">A paired human VH/VL candidate is located against a stated reference population. Every finding gets two coordinates;</text>
+<text class="sub" x="40" y="92">the cell says what to do about it. Nothing here ranks candidates as good or bad — that question needs wet-lab data.</text>
+<text class="axis" x="232" y="156">Repair cost — what undoing this finding costs  →</text>
+<text class="axis" transform="translate(58,380) rotate(-90)" text-anchor="middle">Deviation from reference range  →</text>
+<text class="tick" x="298" y="178" text-anchor="middle">none</text>
+<text class="tick" x="430" y="178" text-anchor="middle">1 framework</text>
+<text class="tick" x="430" y="192" text-anchor="middle">substitution</text>
+<text class="tick" x="562" y="178" text-anchor="middle">1 CDR substitution</text>
+<text class="tick" x="562" y="192" text-anchor="middle">+ re-measure</text>
+<text class="tick" x="694" y="178" text-anchor="middle">redesign a loop</text>
+<text class="tick" x="694" y="192" text-anchor="middle">or surface</text>
+<text class="tick" x="826" y="178" text-anchor="middle">no repair</text>
+<text class="tick" x="826" y="192" text-anchor="middle">path</text>
+<text class="tick" x="216" y="243" text-anchor="end">typical</text>
+<text class="tick" x="216" y="257" text-anchor="end">(p5–p95)</text>
+<rect x="232" y="214" width="127" height="61" rx="7" fill="#e8f2e4" stroke="#7aa06a" stroke-width="1.4"/>
+<text class="lvl" x="296" y="240" text-anchor="middle" fill="#7aa06a">L1</text>
+<text class="lname" x="296" y="257" text-anchor="middle" fill="#3d5266">Ready</text>
+<rect x="364" y="214" width="127" height="61" rx="7" fill="#e8f2e4" stroke="#7aa06a" stroke-width="1.4"/>
+<text class="lvl" x="428" y="240" text-anchor="middle" fill="#7aa06a">L1</text>
+<text class="lname" x="428" y="257" text-anchor="middle" fill="#3d5266">Ready</text>
+<rect x="496" y="214" width="127" height="61" rx="7" fill="#f2efdc" stroke="#b5a465" stroke-width="1.4"/>
+<text class="lvl" x="560" y="240" text-anchor="middle" fill="#b5a465">L2</text>
+<text class="lname" x="560" y="257" text-anchor="middle" fill="#3d5266">Point repair</text>
+<rect x="628" y="214" width="127" height="61" rx="7" fill="#f7e7d3" stroke="#d19a5e" stroke-width="1.4"/>
+<text class="lvl" x="692" y="240" text-anchor="middle" fill="#d19a5e">L3</text>
+<text class="lname" x="692" y="257" text-anchor="middle" fill="#3d5266">Redesign</text>
+<rect x="760" y="214" width="127" height="61" rx="7" fill="#f6dcd6" stroke="#cf7f70" stroke-width="1.4"/>
+<text class="lvl" x="824" y="240" text-anchor="middle" fill="#cf7f70">L4</text>
+<text class="lname" x="824" y="257" text-anchor="middle" fill="#3d5266">Human decision</text>
+<text class="tick" x="216" y="309" text-anchor="end">unusual</text>
+<text class="tick" x="216" y="323" text-anchor="end">(p95–p99)</text>
+<rect x="232" y="280" width="127" height="61" rx="7" fill="#e8f2e4" stroke="#7aa06a" stroke-width="1.4"/>
+<text class="lvl" x="296" y="306" text-anchor="middle" fill="#7aa06a">L1</text>
+<text class="lname" x="296" y="323" text-anchor="middle" fill="#3d5266">Ready</text>
+<rect x="364" y="280" width="127" height="61" rx="7" fill="#f2efdc" stroke="#b5a465" stroke-width="1.4"/>
+<text class="lvl" x="428" y="306" text-anchor="middle" fill="#b5a465">L2</text>
+<text class="lname" x="428" y="323" text-anchor="middle" fill="#3d5266">Point repair</text>
+<rect x="496" y="280" width="127" height="61" rx="7" fill="#f2efdc" stroke="#b5a465" stroke-width="1.4"/>
+<text class="lvl" x="560" y="306" text-anchor="middle" fill="#b5a465">L2</text>
+<text class="lname" x="560" y="323" text-anchor="middle" fill="#3d5266">Point repair</text>
+<rect x="628" y="280" width="127" height="61" rx="7" fill="#f7e7d3" stroke="#d19a5e" stroke-width="1.4"/>
+<text class="lvl" x="692" y="306" text-anchor="middle" fill="#d19a5e">L3</text>
+<text class="lname" x="692" y="323" text-anchor="middle" fill="#3d5266">Redesign</text>
+<rect x="760" y="280" width="127" height="61" rx="7" fill="#f6dcd6" stroke="#cf7f70" stroke-width="1.4"/>
+<text class="lvl" x="824" y="306" text-anchor="middle" fill="#cf7f70">L4</text>
+<text class="lname" x="824" y="323" text-anchor="middle" fill="#3d5266">Human decision</text>
+<text class="tick" x="216" y="375" text-anchor="end">strongly unusual</text>
+<text class="tick" x="216" y="389" text-anchor="end">(p99–p99.9)</text>
+<rect x="232" y="346" width="127" height="61" rx="7" fill="#f2efdc" stroke="#b5a465" stroke-width="1.4"/>
+<text class="lvl" x="296" y="372" text-anchor="middle" fill="#b5a465">L2</text>
+<text class="lname" x="296" y="389" text-anchor="middle" fill="#3d5266">Point repair</text>
+<rect x="364" y="346" width="127" height="61" rx="7" fill="#f2efdc" stroke="#b5a465" stroke-width="1.4"/>
+<text class="lvl" x="428" y="372" text-anchor="middle" fill="#b5a465">L2</text>
+<text class="lname" x="428" y="389" text-anchor="middle" fill="#3d5266">Point repair</text>
+<rect x="496" y="346" width="127" height="61" rx="7" fill="#f7e7d3" stroke="#d19a5e" stroke-width="1.4"/>
+<text class="lvl" x="560" y="372" text-anchor="middle" fill="#d19a5e">L3</text>
+<text class="lname" x="560" y="389" text-anchor="middle" fill="#3d5266">Redesign</text>
+<rect x="628" y="346" width="127" height="61" rx="7" fill="#f6dcd6" stroke="#cf7f70" stroke-width="1.4"/>
+<text class="lvl" x="692" y="372" text-anchor="middle" fill="#cf7f70">L4</text>
+<text class="lname" x="692" y="389" text-anchor="middle" fill="#3d5266">Human decision</text>
+<rect x="760" y="346" width="127" height="61" rx="7" fill="#eed4dd" stroke="#b06a86" stroke-width="1.4"/>
+<text class="lvl" x="824" y="372" text-anchor="middle" fill="#b06a86">L5</text>
+<text class="lname" x="824" y="389" text-anchor="middle" fill="#3d5266">Out of range</text>
+<text class="tick" x="216" y="441" text-anchor="end">outside range</text>
+<text class="tick" x="216" y="455" text-anchor="end">(>p99.9)</text>
+<rect x="232" y="412" width="127" height="61" rx="7" fill="#f7e7d3" stroke="#d19a5e" stroke-width="1.4"/>
+<text class="lvl" x="296" y="438" text-anchor="middle" fill="#d19a5e">L3</text>
+<text class="lname" x="296" y="455" text-anchor="middle" fill="#3d5266">Redesign</text>
+<rect x="364" y="412" width="127" height="61" rx="7" fill="#f7e7d3" stroke="#d19a5e" stroke-width="1.4"/>
+<text class="lvl" x="428" y="438" text-anchor="middle" fill="#d19a5e">L3</text>
+<text class="lname" x="428" y="455" text-anchor="middle" fill="#3d5266">Redesign</text>
+<rect x="496" y="412" width="127" height="61" rx="7" fill="#f6dcd6" stroke="#cf7f70" stroke-width="1.4"/>
+<text class="lvl" x="560" y="438" text-anchor="middle" fill="#cf7f70">L4</text>
+<text class="lname" x="560" y="455" text-anchor="middle" fill="#3d5266">Human decision</text>
+<rect x="628" y="412" width="127" height="61" rx="7" fill="#eed4dd" stroke="#b06a86" stroke-width="1.4"/>
+<text class="lvl" x="692" y="438" text-anchor="middle" fill="#b06a86">L5</text>
+<text class="lname" x="692" y="455" text-anchor="middle" fill="#3d5266">Out of range</text>
+<rect x="760" y="412" width="127" height="61" rx="7" fill="#eed4dd" stroke="#b06a86" stroke-width="1.4"/>
+<text class="lvl" x="824" y="438" text-anchor="middle" fill="#b06a86">L5</text>
+<text class="lname" x="824" y="455" text-anchor="middle" fill="#3d5266">Out of range</text>
+<text class="rule" x="40" y="518"><tspan font-weight="700">Candidate level = max(level of its findings).</tspan> Not a sum, not a weighted average — a person needs the largest price they could pay.</text>
+<rect x="40" y="538" width="490" height="88" rx="9" fill="#f7fafc" stroke="#c3d3df"/>
+<text class="note" x="60" y="562" font-weight="700" fill="#2b4257">Read a cell as a sentence</text>
+<text class="note" x="60" y="583">“typical, but sits in a CDR” → L2: fix it, re-measure affinity.</text>
+<text class="note" x="60" y="603">“outside any known range, one framework edit away” → L3, not L5.</text>
+<rect x="550" y="538" width="470" height="88" rx="9" fill="#f7fafc" stroke="#c3d3df"/>
+<text class="note" x="570" y="562" font-weight="700" fill="#2b4257">What the levels are not</text>
+<text class="note" x="570" y="583">L5 is “outside the range with no repair path”, not “bad antibody”.</text>
+<text class="note" x="570" y="603">Rank within a level using affinity, yield, SEC, Tm — not these flags.</text>
+</svg>

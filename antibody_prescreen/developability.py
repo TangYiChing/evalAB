@@ -1,26 +1,27 @@
-"""Aggregation propensity (AGGRESCAN) and net charge.
+"""Sequence-level aggregation propensity and charge.
 
-Renamed from "developability", which was too vague to be useful: it bundled
-three unrelated measurements under one name, and a flag saying
-"developability" told the reader nothing about what was actually wrong.
-Aggregation and charge are separable, mechanistically different, and each is
-something a person can picture.
+Three separable measurements, each reported on its own: AGGRESCAN aggregation
+propensity, isoelectric point, and net charge. They are kept apart on purpose.
+Bundling them under one "developability" heading tells a reader that something
+is off without telling them which physical property it was, and the three have
+different repair costs — a charge problem in a CDR is a different kind of
+problem from a hydrophobic stretch in a framework.
 
-They are also emitted as separate checks now, because bundling them made both
-uninterpretable: the combined check fired on 100% of candidates in both
-populations (LR exactly 1.00), and there was no way to tell whether that came
-from the aggregation part, the charge part, or the unconditional flag.
+Each function here returns a raw number. Nothing in this module decides whether
+that number is acceptable: the value is located against a stated reference band
+in `bands.py`, and the deviation is paired with a repair cost in `levels.py`.
+That separation is what keeps the pipeline a triage rather than a score.
 
-Core algorithm ported from the ToolUniverse `tooluniverse-antibody-engineering`
-skill's `scripts/developability.py` (pure-Python AGGRESCAN implementation,
-Conchillo-Sole et al. 2007 values) rather than reimplemented, per the Tier 1
-plan's "reuse, don't rebuild" note. This module adds the Flag-based wrapper
-and CDR-region weighting that the original script didn't have (it returns raw
-JSON with no region awareness).
+The AGGRESCAN core (Conchillo-Sole et al. 2007 a3v values, windowed a4v, and
+the Na4vSS aggregate) is a port of the pure-Python implementation in the
+ToolUniverse `tooluniverse-antibody-engineering` skill's
+`scripts/developability.py`, rather than a reimplementation. The CDR-region
+awareness is added here; the original is region-blind.
+
+`net_charge` and `isoelectric_point` deliberately share one Henderson-
+Hasselbalch model and one pKa table, so the two can never disagree with each
+other for the sole reason that they were computed from different constants.
 """
-
-from .checks import Flag
-from .numbering import NumberedChain
 
 # --- AGGRESCAN intrinsic aggregation-propensity values (a3v), Conchillo-Sole 2007 ---
 A3V = {
@@ -33,9 +34,6 @@ HOT_SPOT_THRESHOLD = -0.02  # AGGRESCAN HST
 
 PKA = {"D": 3.9, "E": 4.1, "C": 8.5, "Y": 10.1, "H": 6.5, "K": 10.8, "R": 12.5}
 N_TERM, C_TERM = 8.6, 3.6
-
-# pI range considered "normal" for a human IgG Fv; outside this is a soft flag.
-PI_LOW, PI_HIGH = 5.5, 9.5
 
 
 def _window(values, w=5):
@@ -112,65 +110,22 @@ def isoelectric_point(seq: str) -> float:
     return round((lo + hi) / 2, 2)
 
 
-def check_aggregation_and_charge(chain: NumberedChain, chain_name: str) -> list[Flag]:
-    seq = chain.full_sequence()
-    residues = [r for r in chain.residues if r.aa != "-"]
+def net_charge(seq: str, ph: float = 7.4) -> float:
+    """Net charge at a given pH, on the same Henderson-Hasselbalch model as
+    `isoelectric_point` — which is the point: pI and net charge must not
+    disagree with each other because they were computed from different pKa
+    tables.
 
-    flags: list[Flag] = []
-
-    hot_spots = aggrescan_hot_spots(seq)
-    na4vss = aggrescan_na4vss(seq)
-    cdr_overlapping_spots = []
-    for spot in hot_spots:
-        spot_region_residues = residues[spot["start_idx"] : spot["end_idx"] + 1]
-        if any(r.is_cdr for r in spot_region_residues):
-            region_label = "/".join(sorted({r.region for r in spot_region_residues}))
-            cdr_overlapping_spots.append((spot, region_label))
-
-    # Aggregate signal, not per-hot-spot: almost every real antibody has a
-    # handful of individual AGGRESCAN hot spots (normal biology), so the
-    # whole-sequence Na4vSS magnitude is the meaningful comparison, weighted
-    # modestly since this is one signal among several.
-    flags.append(
-        Flag(
-            check="aggregation",
-            severity="soft",
-            region="chain",
-            weight=na4vss * 15.0,
-            message=(
-                f"{chain_name} aggregate aggregation score (Na4vSS)={na4vss}, "
-                f"{len(hot_spots)} hot spot(s) total, {len(cdr_overlapping_spots)} overlapping a CDR"
-            ),
-        )
-    )
-
-    # Separately and more lightly: flag when a hot spot specifically sits in
-    # a CDR loop, since that's the localized-risk case worth a human's
-    # attention even when the aggregate score is unremarkable.
-    for spot, region_label in cdr_overlapping_spots:
-        flags.append(
-            Flag(
-                check="aggregation",
-                severity="soft",
-                region=region_label,
-                weight=2.0,
-                message=(
-                    f"aggregation hot spot '{spot['peptide']}' overlaps CDR "
-                    f"({chain_name} {region_label}, mean a4v={spot['mean_a4v']})"
-                ),
-            )
-        )
-
-    pi = isoelectric_point(seq)
-    if pi < PI_LOW or pi > PI_HIGH:
-        flags.append(
-            Flag(
-                check="charge",
-                severity="soft",
-                region="chain",
-                weight=2.0,
-                message=f"{chain_name} pI={pi} outside typical Fv range [{PI_LOW}, {PI_HIGH}] — may affect solubility/formulation",
-            )
-        )
-
-    return flags
+    Reported for the whole Fv and, separately, for the CDR residues alone.
+    The second one is the sequence-level stand-in for TAP's PPC/PNC patch
+    metrics: the patches themselves need a structure, but the charge that
+    forms them is already visible in the loops.
+    """
+    counts = {aa: seq.count(aa) for aa in set(seq)}
+    pos = 10 ** (N_TERM - ph) / (1 + 10 ** (N_TERM - ph))
+    for aa in ("K", "R", "H"):
+        pos += counts.get(aa, 0) * 10 ** (PKA[aa] - ph) / (1 + 10 ** (PKA[aa] - ph))
+    neg = 1 / (1 + 10 ** (C_TERM - ph))
+    for aa in ("D", "E", "C", "Y"):
+        neg += counts.get(aa, 0) / (1 + 10 ** (PKA[aa] - ph))
+    return round(pos - neg, 3)

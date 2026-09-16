@@ -6,3 +6,10 @@ __pycache__/
 # Tier 2 build artefacts — models are regenerable from sequence
 model_cache/
 *.pdb.partial
+
+# Third-party reference data: fetched, checksummed and documented in
+# data/reference/README.md, never redistributed from this repository.
+data/reference/*.csv.gz
+data/reference/*.partial
+
+.DS_Store

@@ -1,9 +1,14 @@
-"""PLAbDab as a calibration population.
+"""PLAbDab as the reference population the range bands are fitted to.
 
-Why this file exists at all: `fusion.py`'s thresholds are currently fitted to
-508 antibodies selected for "someone solved a crystal structure of it", which
-is a structural-biology selection, not a developability one. PLAbDab gives a
-much larger population *with a provenance label*.
+A reference population decides what "unusual" means, so its selection bias is
+inherited wholesale by every band fitted on it. Choosing one is therefore a
+design decision that has to be stated, not a data-loading detail.
+
+PLAbDab is chosen because it is large (~150k paired entries) and because it
+carries a *provenance label*. The obvious alternative — antibodies with solved
+structures — is a population of a few hundred selected for "someone
+crystallised it", which is a structural-biology selection dressed up as a
+developability one, and is far too small to assert a distribution tail.
 
 ## Do not download the 5 GB archive
 
@@ -31,6 +36,7 @@ not "bad". This is a provenance label, not an assay. It is a better signal
 than "a structure exists", and it is still not experimental ground truth.
 """
 
+import os
 import urllib.request
 from pathlib import Path
 
@@ -39,7 +45,22 @@ PLABDAB_PAIRED_URL = (
     "paired_sequences.csv.gz"
 )
 
-DEFAULT_CACHE = Path.home() / ".cache" / "evalab" / "plabdab" / "paired_sequences.csv.gz"
+# Where the reference download lives. In a clone, that is `data/reference/`,
+# so the file sits beside the repository it calibrates and a reader can see
+# exactly which public data produced the shipped bands. Outside a clone
+# (pip-installed), it falls back to the user cache.
+_REPO_REFERENCE_DIR = Path(__file__).resolve().parents[2] / "data" / "reference"
+_USER_CACHE_DIR = Path.home() / ".cache" / "evalab" / "plabdab"
+
+
+def default_cache_path() -> Path:
+    """Resolve the reference file location: repo `data/reference/` if present."""
+    override = os.environ.get("EVALAB_REFERENCE_DIR")
+    if override:
+        return Path(override).expanduser() / "paired_sequences.csv.gz"
+    if _REPO_REFERENCE_DIR.is_dir():
+        return _REPO_REFERENCE_DIR / "paired_sequences.csv.gz"
+    return _USER_CACHE_DIR / "paired_sequences.csv.gz"
 
 # `pairing` values used as the two calibration populations.
 THERAPEUTIC_PAIRING = "TheraSAbDab"
@@ -52,7 +73,7 @@ MIN_CHAIN_LEN = 90
 
 def fetch_paired_sequences(cache_path: Path | str | None = None) -> Path:
     """Download PLAbDab's paired_sequences.csv.gz (~11 MB) if not already cached."""
-    path = Path(cache_path) if cache_path is not None else DEFAULT_CACHE
+    path = Path(cache_path) if cache_path is not None else default_cache_path()
     if path.exists() and path.stat().st_size > 0:
         return path
 

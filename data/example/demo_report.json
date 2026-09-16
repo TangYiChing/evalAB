@@ -1,0 +1,1842 @@
+{
+  "run": {
+    "band_version": {
+      "reference": "PLAbDab (all pairings) + PLAbDab/TheraSAbDab (clinical-stage) for vh_germline_identity, vl_germline_identity",
+      "n_derivation": 29147,
+      "n_validation": 29030,
+      "cuts": [
+        5.0,
+        95.0,
+        99.0,
+        99.9
+      ]
+    },
+    "n_candidates": 20,
+    "n_numbered": 20,
+    "numbering_success_rate": 1.0,
+    "unmeasured_metrics": []
+  },
+  "results": [
+    {
+      "candidate_id": "Tamgiblimab",
+      "level": 1,
+      "level_name": "Ready",
+      "action": "put it on the wet-lab list as it stands",
+      "drivers": [
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 78 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 78 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Umizortamig1_2",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV3-2*02) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV14-100*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV3-2*02) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV14-100*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "fv_net_charge",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: fv_net_charge=-4.15 \u2014 below the p5-p95 range [-4.0487, 5.848] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NT' at VH CDR2 64 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VL CDR1 36 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 11 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Izastobart",
+      "level": 2,
+      "level_name": "Point repair",
+      "action": "one or two substitutions first; re-measure affinity if any is in a CDR",
+      "drivers": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VL CDR3 105 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VL CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        }
+      ],
+      "findings": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VL CDR3 105 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VL CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Petosemtamab_2",
+      "level": 2,
+      "level_name": "Point repair",
+      "action": "one or two substitutions first; re-measure affinity if any is in a CDR",
+      "drivers": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NT' at VH CDR2 57 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VH CDR3 110 \u2014 one CDR substitution + re-measure affinity"
+        }
+      ],
+      "findings": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NT' at VH CDR2 57 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VH CDR3 110 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Conatumumab",
+      "level": 2,
+      "level_name": "Point repair",
+      "action": "one or two substitutions first; re-measure affinity if any is in a CDR",
+      "drivers": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VH CDR2 58 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        }
+      ],
+      "findings": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VH CDR2 58 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Anivovetmab",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV2-6*02) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV6-13*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV2-6*02) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV6-13*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "vl_germline_identity",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vl_germline_identity=0.75 \u2014 below the p5-p95 range [0.815217, 1] of PLAbDab/TheraSAbDab (clinical-stage) (n=393) [crossed the p99 cut, but n=393 cannot resolve past tier 1] [closest human germline IGKV6-13*01]"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DG' at VH CDR2 59 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR2 56 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VL CDR1 36 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VL CDR3 105 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 72 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VL FR3 68 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 11 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 21 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR3 94 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Lutikizumab",
+      "level": 3,
+      "level_name": "Redesign",
+      "action": "a loop or a surface has to be redesigned \u2014 budget a design cycle, not a mutation",
+      "drivers": [
+        {
+          "source": "cdr_net_charge",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: cdr_net_charge=2.268 \u2014 above the p5-p95 range [-5.069, 2.159] of PLAbDab (all pairings) (n=29147)"
+        }
+      ],
+      "findings": [
+        {
+          "source": "cdr_net_charge",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: cdr_net_charge=2.268 \u2014 above the p5-p95 range [-5.069, 2.159] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 69 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DG' at VL FR3 69 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Micvotabart",
+      "level": 1,
+      "level_name": "Ready",
+      "action": "put it on the wet-lab list as it stands",
+      "drivers": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 69 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 69 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Donitabart",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "cdrh3_len",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: cdrh3_len=6 \u2014 below the p5-p95 range [9, 22] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "fv_pi",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: fv_pi=9.79 \u2014 above the p5-p95 range [4.87, 9.25] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "fv_net_charge",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: fv_net_charge=9.076 \u2014 above the p5-p95 range [-4.0487, 5.848] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV1-110*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "cdrh3_len",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: cdrh3_len=6 \u2014 below the p5-p95 range [9, 22] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "fv_pi",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: fv_pi=9.79 \u2014 above the p5-p95 range [4.87, 9.25] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "fv_net_charge",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: fv_net_charge=9.076 \u2014 above the p5-p95 range [-4.0487, 5.848] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV1-110*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NG' at VL CDR1 34 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NT' at VL CDR1 36 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "Ibentatug",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV5-9-3*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV2-109*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV5-9-3*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV2-109*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VL CDR2 57 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 69 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 71 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 101 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "QHZ08643_QHZ08651",
+      "level": 2,
+      "level_name": "Point repair",
+      "action": "one or two substitutions first; re-measure affinity if any is in a CDR",
+      "drivers": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NG' at VH CDR1 35 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VH CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VL CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        }
+      ],
+      "findings": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NG' at VH CDR1 35 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VH CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VL CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 81 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 94 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "AFQ83141_AFQ83148",
+      "level": 3,
+      "level_name": "Redesign",
+      "action": "a loop or a surface has to be redesigned \u2014 budget a design cycle, not a mutation",
+      "drivers": [
+        {
+          "source": "vh_aggregation",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vh_aggregation=0.2576 \u2014 above the p5-p95 range [0.1559, 0.2436] of PLAbDab (all pairings) (n=29147) [AGGRESCAN Na4vSS \u2014 a regional property, not one residue]"
+        }
+      ],
+      "findings": [
+        {
+          "source": "vh_aggregation",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vh_aggregation=0.2576 \u2014 above the p5-p95 range [0.1559, 0.2436] of PLAbDab (all pairings) (n=29147) [AGGRESCAN Na4vSS \u2014 a regional property, not one residue]"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 94 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "AFO05311_AFO05305",
+      "level": 1,
+      "level_name": "Ready",
+      "action": "put it on the wet-lab list as it stands",
+      "drivers": [
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "UOS76540_UOS76539",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV1-9*02) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV5-48*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV1-9*02) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV5-48*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 98 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR1 13 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NG' at VL FR2 47 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VL FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "n_glycosylation",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "N-glycosylation motif 'NGS' at VL FR2 47 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "UOS82608_UOS82606",
+      "level": 2,
+      "level_name": "Point repair",
+      "action": "one or two substitutions first; re-measure affinity if any is in a CDR",
+      "drivers": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NG' at VH CDR2 62 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        }
+      ],
+      "findings": [
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NG' at VH CDR2 62 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 53 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR2 39 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "QRK71970_QRK71974",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV1-69-1*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV3-10*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV1-69-1*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV3-10*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "vh_germline_identity",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vh_germline_identity=1 \u2014 above the p5-p95 range [0.768122, 0.989796] of PLAbDab/TheraSAbDab (clinical-stage) (n=393) [closest human germline IGHV1-69-1*01]"
+        },
+        {
+          "source": "fv_pi",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: fv_pi=4.64 \u2014 below the p5-p95 range [4.87, 9.25] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "fv_net_charge",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: fv_net_charge=-6.151 \u2014 below the p5-p95 range [-4.0487, 5.848] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "cdr_net_charge",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: cdr_net_charge=-6.067 \u2014 below the p5-p95 range [-5.069, 2.159] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DG' at VH CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VL CDR1 30 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VL CDR1 36 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 98 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 70 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR2 39 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "XEF76981_XEF76997",
+      "level": 3,
+      "level_name": "Redesign",
+      "action": "a loop or a surface has to be redesigned \u2014 budget a design cycle, not a mutation",
+      "drivers": [
+        {
+          "source": "odd_cysteine",
+          "deviation": 2,
+          "cost": 2,
+          "level": 3,
+          "message": "VH has an odd cysteine count (3) \u2014 at least one cannot be canonically paired \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "cdrl1_len",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: cdrl1_len=4 \u2014 below the p5-p95 range [6, 11] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "vl_germline_identity",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vl_germline_identity=0.747253 \u2014 below the p5-p95 range [0.815217, 1] of PLAbDab/TheraSAbDab (clinical-stage) (n=393) [crossed the p99 cut, but n=393 cannot resolve past tier 1] [closest human germline IGLV3-21*03]"
+        }
+      ],
+      "findings": [
+        {
+          "source": "odd_cysteine",
+          "deviation": 2,
+          "cost": 2,
+          "level": 3,
+          "message": "VH has an odd cysteine count (3) \u2014 at least one cannot be canonically paired \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "cdrl1_len",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: cdrl1_len=4 \u2014 below the p5-p95 range [6, 11] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "vl_germline_identity",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vl_germline_identity=0.747253 \u2014 below the p5-p95 range [0.815217, 1] of PLAbDab/TheraSAbDab (clinical-stage) (n=393) [crossed the p99 cut, but n=393 cannot resolve past tier 1] [closest human germline IGLV3-21*03]"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VH CDR3 111 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NS' at VL CDR1 27 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VL CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 69 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VL FR3 87 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR3 97 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "WFI50829_WFI50834",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "fv_net_charge",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: fv_net_charge=-9.035 \u2014 below the p5-p95 range [-4.0487, 5.848] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "vl_aggregation",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: vl_aggregation=0.1249 \u2014 below the p5-p95 range [0.1399, 0.2126] of PLAbDab (all pairings) (n=29147) [AGGRESCAN Na4vSS \u2014 a regional property, not one residue]"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV6-6*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV3-4*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "fv_net_charge",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: fv_net_charge=-9.035 \u2014 below the p5-p95 range [-4.0487, 5.848] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "vl_aggregation",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: vl_aggregation=0.1249 \u2014 below the p5-p95 range [0.1399, 0.2126] of PLAbDab (all pairings) (n=29147) [AGGRESCAN Na4vSS \u2014 a regional property, not one residue]"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV6-6*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV3-4*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "vh_germline_identity",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vh_germline_identity=0.99 \u2014 above the p5-p95 range [0.768122, 0.989796] of PLAbDab/TheraSAbDab (clinical-stage) (n=393) [closest human germline IGHV6-6*01]"
+        },
+        {
+          "source": "fv_pi",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: fv_pi=4.58 \u2014 below the p5-p95 range [4.87, 9.25] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NH' at VH CDR2 62 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DG' at VL CDR1 34 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VL CDR1 36 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR1 19 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR2 39 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "QKO95500_QKO95510",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "cdrl3_len",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: cdrl3_len=14 \u2014 above the p5-p95 range [8, 12] of PLAbDab (all pairings) (n=29147)"
+        }
+      ],
+      "findings": [
+        {
+          "source": "cdrl3_len",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "strongly unusual: cdrl3_len=14 \u2014 above the p5-p95 range [8, 12] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "poly_residue_run",
+          "deviation": 2,
+          "cost": 2,
+          "level": 3,
+          "message": "5 consecutive 'S' in VL CDR3 (AbSci Origin-1 Critical, threshold 5) \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "cdrh3_len",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: cdrh3_len=7 \u2014 below the p5-p95 range [9, 22] of PLAbDab (all pairings) (n=29147)"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DG' at VL CDR3 108 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 82 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NT' at VH FR3 85 \u2014 one framework substitution"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "deamidation motif 'NS' at VH FR3 92 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR2 39 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 91 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    },
+    {
+      "candidate_id": "WYM58511_WYM58510",
+      "level": 4,
+      "level_name": "Human decision",
+      "action": "nothing routes this automatically; a person decides whether it is worth the bench time",
+      "drivers": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV1-47-2*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV1-117*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        }
+      ],
+      "findings": [
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VH closest germline is mouse, not human (IGHV1-47-2*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "out_of_scope_species",
+          "deviation": 2,
+          "cost": 3,
+          "level": 4,
+          "message": "VL closest germline is mouse, not human (IGKV1-117*01) \u2014 outside this pipeline's declared scope; every band was fitted on human antibodies and does not describe this \u2014 redesign a loop or a surface \u2014 not a substitution"
+        },
+        {
+          "source": "vh_aggregation",
+          "deviation": 1,
+          "cost": 3,
+          "level": 3,
+          "message": "unusual: vh_aggregation=0.1522 \u2014 below the p5-p95 range [0.1559, 0.2436] of PLAbDab (all pairings) (n=29147) [AGGRESCAN Na4vSS \u2014 a regional property, not one residue]"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DS' at VH CDR2 62 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "oxidation-prone M at VH CDR3 115 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "isomerization motif 'DG' at VL CDR1 34 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 2,
+          "level": 2,
+          "message": "deamidation motif 'NT' at VL CDR1 36 \u2014 one CDR substitution + re-measure affinity"
+        },
+        {
+          "source": "ptm_motif",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "isomerization motif 'DS' at VH FR3 98 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VH FR3 89 \u2014 one framework substitution"
+        },
+        {
+          "source": "oxidation_site",
+          "deviation": 0,
+          "cost": 1,
+          "level": 1,
+          "message": "oxidation-prone M at VL FR1 4 \u2014 one framework substitution"
+        }
+      ],
+      "unmeasured": [],
+      "error": null,
+      "structure": null
+    }
+  ]
+}

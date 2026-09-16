@@ -17,8 +17,9 @@ class ModellingError(Exception):
     """Raised when ABodyBuilder2 cannot produce a model for a VH/VL pair.
 
     Callers should degrade to Tier-1-only for that candidate rather than
-    failing the whole batch — same contract as immunogenicity's
-    `available=False`.
+    failing the whole batch: Tier 2 is an annotation, so its absence must
+    never change a Tier 1 level. `StructureAnnotation.available=False`
+    records the failure in the report instead.
     """
 
 
