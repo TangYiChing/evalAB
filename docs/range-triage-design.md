@@ -147,12 +147,19 @@ distribution, exactly as §4(b) predicts.
 ## 6. The design batch
 
 23 designed VH variants sharing one light chain and one framework, varying in
-CDR-H3. Source file was an Apple Numbers document named `.csv`; recovered to
-`batch_w_qcfailure_recovered.csv`.
+CDR-H3.
+
+**These sequences are internal and are not in this repository.** The numbers
+below are reported as a record of what the design produced on a real batch;
+they are not reproducible from a clone, and nothing in the shipped code or data
+depends on them. The reproducible worked example is `data/example/`, which uses
+public data only.
+
+The run was the equivalent of:
 
 ```
-python examples/screen_designs.py ../batch_w_qcfailure_recovered.csv \
-    --bands antibody_prescreen/data/bands_therasabdab.json --unseal Status
+python examples/screen_designs.py <internal_batch>.csv \
+    --shared-scaffold --unseal Status
 ```
 
 **Result: 23 of 23 at Level 4.** All on findings inherited from the shared
