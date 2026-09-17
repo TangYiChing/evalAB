@@ -80,7 +80,7 @@ All fitted on PLAbDab, human-only, cleaned (n=29,147) except where noted.
 **Biology:** the CDRs are the six loops that form the antigen-binding site.
 CDR-H3 in particular is the product of V(D)J recombination and is the most
 variable — it usually contributes the most binding surface. Loop length is a
-structural parameter: a loop far outside the natural range may not pack against
+structural parameter: a loop far outside the observed range may not pack against
 the framework the way the fold expects, and long CDR-H3s are associated with
 conformational flexibility.
 **Why two-sided:** a 6-residue CDR-H3 is as unusual as a 28-residue one, and

@@ -125,9 +125,11 @@ CONSERVED_POSITIONS = {23, 41, 104, 118}
 
 # AbSci Origin-1 Supplementary Table 7, Critical tier. Left in as an
 # observation rather than a metric because a run of five serines has no
-# distribution on natural antibodies to fit against — it occurs zero times in
-# PLAbDab's therapeutic arm. Its deviation is asserted from the mechanism
-# (a generative sampling artefact), which is what BinaryObservation is for.
+# distribution to fit against — it occurs zero times in PLAbDab's therapeutic
+# arm. Note this is a published-antibody corpus, not repertoire sequencing, so
+# it cannot speak to what a B cell produces either; both populations simply
+# lack the event. Its deviation is asserted from the mechanism (a generative
+# sampling artefact), which is what BinaryObservation is for.
 POLY_RUN_CRITICAL = [("W", 5), ("G", 4), ("Y", 5), ("S", 5)]
 
 

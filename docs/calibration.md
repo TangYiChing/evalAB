@@ -95,21 +95,65 @@ it one.
 
 ---
 
-## 4. Generative designs need their own reference
+## 4. Generative designs: pick the reference for the question you are asking
 
-The bands shipped here are fitted on natural, patented and clinical
-antibodies. In that population, a poly-residue run or an odd cysteine count is
-rare, and its rarity is informative because it reflects what B-cell repertoires
-and development pipelines produce.
+The bands shipped here are fitted on PLAbDab, which is **patented and published
+antibodies** — 91k from patent text, 35k same-entry, 22k unique-source, 13k
+with crystal structures, 1.2k clinical-stage. Not one of them comes from
+repertoire sequencing. So the shipped reference encodes *"what antibodies
+people have made, written down and filed"*, which is a population shaped by
+humanisation, in-vitro affinity maturation, display selection and
+patentability.
 
-A de novo generative model has no such process behind it. The same observation
-in a generated sequence may be an artefact of the sampler, a benign quirk, or a
-genuine liability — the natural-population frequency does not tell you which.
-Transferring the interpretation across is an assumption, not a measurement.
+That distinction matters the moment you screen generative output, because two
+different questions get confused here and they need two different references.
 
-If you screen generative output at scale, fit a reference population **from
-your own generator's sequences** and compare a design against its own kind.
+### Question A: "is this design an outlier among my designs?"
+
+Fit a reference population **from your own generator's sequences**. A design
+far out in your generator's own distribution is worth a look — it may be a
+sampling artefact, a mode collapse escapee, or the one interesting design in
+the batch.
+
 `fit_bands` takes any population; the reference is a parameter, not a fact.
+
+### Question B: "does this design look like an antibody a human B cell makes?"
+
+**Do not use your generator's own output for this, and do not use the shipped
+bands either.** Both will mislead, for the same reason germline identity is not
+fitted on the patent corpus (§1): a band fitted on a population that contains
+the thing you are trying to catch widens exactly far enough to stop catching
+it. If your generator systematically emits sequences no repertoire would
+produce, fitting bands on its own output makes those features **tier 0,
+typical** — the check calibrates away its own purpose.
+
+The right reference for this question is a natural human repertoire —
+**OAS (Observed Antibody Space)**, which is BCR sequencing from real donors.
+And the right *measurement* is probably not a percentile band on summary
+statistics at all:
+
+- **OASis** (BioPhi; Příhoda et al., *mAbs* 2022) cuts the sequence into
+  overlapping 9-mers and asks what fraction of them appear in human repertoires,
+  returning a humanness percentile. This is local sequence context, which
+  evalAB's global summary metrics cannot see.
+- **Antibody language-model likelihood** (AbLang2, IgLM, ESM) scores the same
+  idea continuously.
+
+evalAB's 16 metrics are *marginals of coarse global statistics* — loop lengths,
+net charge, pI, motif counts. A design can sit at the median of every one of
+them and still contain a tripeptide that occurs in no human repertoire. On the
+nativeness question specifically, evalAB is strictly weaker than OASis and does
+not replace it.
+
+### How to use both
+
+Run the nativeness measurement as its own tool, then feed its output into
+evalAB as one more `RangeMetric` with its own repair cost. evalAB then does
+what it is for — pairing that deviation with the cost of repairing it — instead
+of pretending to measure nativeness itself.
+
+This is what AbSci's Origin-1 does in practice: ESM, AbLang2, TAP and BioPhi
+are reported **side by side**, not fused into one number.
 
 ---
 
