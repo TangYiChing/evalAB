@@ -53,6 +53,10 @@ pass/fail gate would get it wrong:
 path I can name". Both halves of that sentence are about the reference
 population and the repair scale — not about the molecule's merit.
 
+For what each individual finding measures — the biology behind it, the tool
+that produces it, and the highest level it can drive on its own — see
+[docs/metrics.md](docs/metrics.md).
+
 ---
 
 ## Quick start
@@ -142,6 +146,7 @@ antibody_prescreen/        the package
 data/reference/            public reference data — fetched, checksummed, not committed
 data/example/              a reproducible 20-candidate demo batch and its exact output
 docs/
+  metrics.md               every metric: biology, tool, repair cost, level it can drive
   range-triage-design.md   why this is a triage and not a score, with the measurements
   calibration.md           how to make it yours: refit, pre-register, rank, generative designs
 assets/figure-1-triage.svg Figure 1, generated from the matrix in levels.py

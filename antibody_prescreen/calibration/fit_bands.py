@@ -181,6 +181,11 @@ def main() -> None:
     args = ap.parse_args()
 
     rows, label = load_reference(args.reference, args.limit)
+    # The filters change what the population IS, so they belong in the label
+    # rather than only in this run's stderr. Every report prints this string.
+    applied = [n for n, on in (("human-only", args.human_only), ("cleaned", args.clean)) if on]
+    if applied:
+        label = f"{label}, {', '.join(applied)}"
     print(f"reference: {label} — {len(rows)} deduplicated pairs", file=sys.stderr)
 
     half = len(rows) // 2

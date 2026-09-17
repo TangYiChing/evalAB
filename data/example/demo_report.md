@@ -1,6 +1,6 @@
 ### Run provenance
 
-- **Reference bands:** PLAbDab (all pairings) + PLAbDab/TheraSAbDab (clinical-stage) for vh_germline_identity, vl_germline_identity (fit n=29147, validation n=29030, cuts p5/p95/p99/p99.9)
+- **Reference bands:** PLAbDab (all pairings), human-only, cleaned + PLAbDab/TheraSAbDab (clinical-stage), human-only, cleaned for vh_germline_identity, vl_germline_identity (fit n=29147, validation n=29030, cuts p5/p95/p99/p99.9)
 - **Numbering:** 20/20 candidates numbered (100.0%)
 - **Metrics with no reference band (unmeasured, NOT typical):** none
 

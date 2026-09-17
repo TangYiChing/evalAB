@@ -1,7 +1,7 @@
 {
   "run": {
     "band_version": {
-      "reference": "PLAbDab (all pairings) + PLAbDab/TheraSAbDab (clinical-stage) for vh_germline_identity, vl_germline_identity",
+      "reference": "PLAbDab (all pairings), human-only, cleaned + PLAbDab/TheraSAbDab (clinical-stage), human-only, cleaned for vh_germline_identity, vl_germline_identity",
       "n_derivation": 29147,
       "n_validation": 29030,
       "cuts": [

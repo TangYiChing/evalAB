@@ -241,44 +241,67 @@ and then reads the answer as "what do antibodies look like".
 
 ## 9.1 The two populations, side by side
 
-Refitted on 40,000 deduplicated PLAbDab pairs (20,000 derivation / 20,000
-validation), against the same 534/535 TheraSAbDab split:
+Both fitted with the shipped filters, `--human-only --clean`, so this table
+describes the populations evalAB actually uses: TheraSAbDab 393 derivation /
+420 validation, PLAbDab 29,147 / 29,030. (An earlier version of this table was
+fitted on 40,000 pairs with no filters; the numbers below supersede it.)
 
-| metric | TheraSAbDab p5-p95 | PLAbDab p5-p95 | TheraSAbDab p99.9 | PLAbDab p99.9 |
+| metric | TheraSAbDab p5–p95 | PLAbDab p5–p95 | TheraSAbDab p99.9 | PLAbDab p99.9 |
 |---|---|---|---|---|
-| cdrh1_len | 8 - 9 | 8 - 10 | 10 | 12 |
-| cdrh2_len | 7 - 10 | 7 - 10 | 12.3 | 12 |
-| **cdrh3_len** | 8 - 18.4 | 8 - **21** | 24.4 | **63** |
-| cdrl1_len | 6 - 12 | 6 - 12 | 12 | 12 |
-| cdrl2_len | 3 - 3 | 3 - 3 | 3.47 | 7 |
-| cdrl3_len | 8 - 11 | 8 - 11 | 13.5 | 14 |
-| fv_cys_count | 4 - 5 | 4 - **6** | 6 | 10 |
-| fv_pi | 4.95 - 9.26 | 4.83 - 9.23 | 9.64 | 9.81 |
-| fv_net_charge | -3.27 - 5.89 | -4.26 - 5.84 | 8.78 | 9.84 |
-| vh_aggregation | 0.154 - 0.238 | 0.154 - 0.243 | 0.288 | 0.285 |
-| vl_aggregation | 0.140 - 0.211 | 0.139 - 0.216 | 0.252 | 0.255 |
-| vh_germline_identity | 0.764 - 0.99 | **0.724** - 0.99 | — | — |
-| vl_germline_identity | 0.804 - 1.0 | **0.739** - 1.0 | — | — |
+| `cdrh1_len` | 8 – 9 | 8 – 10 | 10 | 13 |
+| `cdrh2_len` | 7 – 8 | 7 – 10 | 13 | 13 |
+| **`cdrh3_len`** | 8.6 – 19 | 9 – 22 | 24.8 | 35.7 |
+| `cdrl1_len` | 6 – 12 | 6 – 11 | 12 | 12 |
+| `cdrl2_len` | 3 – 3 | 3 – 3 | 3 | 7 |
+| `cdrl3_len` | 8 – 11 | 8 – 12 | 13.6 | 15 |
+| **`fv_cys_count`** | 4 – 5 | 4 – 6 | 6 | 8 |
+| `fv_pi` | 4.93 – 9.28 | 4.87 – 9.25 | 9.65 | 9.82 |
+| `fv_net_charge` | -3.27 – 6.07 | -4.05 – 5.85 | 8.8 | 9.85 |
+| `cdr_net_charge` | -5.06 – 2.2 | -5.07 – 2.16 | 4.62 | 5.93 |
+| `vh_aggregation` | 0.156 – 0.239 | 0.156 – 0.244 | 0.288 | 0.286 |
+| `vl_aggregation` | 0.14 – 0.211 | 0.14 – 0.213 | 0.254 | 0.255 |
+| `cdr_ptm_motifs` | 0 – 3.4 | 0 – 4 | 5.61 | 6 |
+| `cdr_oxidation_sites` | 0 – 3 | 0 – 4 | 4.61 | 6 |
+| **`vh_germline_identity`** | 0.768 – 0.99 | 0.724 – 0.99 | 1 | 1 |
+| **`vl_germline_identity`** | 0.815 – 1 | 0.739 – 1 | 1 | 1 |
+
+TheraSAbDab's p99.9 column is shown for comparison only. At n=393 it is not a
+usable cut point — `max_tier=1` for every clinical band, so nothing fitted on
+that population can assert a tier above "unusual" (see §10.3).
 
 Three readings, and the third is the one worth keeping.
 
-**Loop lengths and cysteine count move a lot.** CDR-H3's p99.9 goes from 24.4
-to 63. Six cysteines in an Fv is above p95 clinically and inside it in the
-repertoire.
+**Loop lengths and cysteine count move.** CDR-H3's p95 goes 19 → 22 and its
+p99.9 goes 24.8 → 35.7. Six cysteines in an Fv is at the clinical p95 and
+comfortably inside the repertoire band.
 
-**Surface properties barely move at all.** `vh_aggregation` has a p5 of 0.154
-in both populations, to three significant figures. pI, net charge and
-aggregation propensity are nearly identical in 534 clinical antibodies and
-20,000 mostly-patent ones. That is a finding in its own right: on these
-sequence-level measures, the development pipeline does not measurably narrow
-the distribution relative to the patent corpus. It also means the population
-choice is nearly free for these metrics — the same lines, with enough n to
-support tier 3.
+**Surface properties barely move at all.** `vh_aggregation` has a p5 of 0.156
+in both populations, to three significant figures; `vl_aggregation` p5 is 0.140
+in both; `cdr_net_charge` p5 is -5.06 vs -5.07. pI, net charge and aggregation
+propensity are nearly identical in 393 clinical antibodies and 29,147
+repertoire ones. That is a finding in its own right: on these sequence-level
+measures, the development pipeline does not measurably narrow the distribution
+relative to the patent corpus. It also means the population choice is nearly
+free for these metrics — the same lines, with enough n to support tier 3.
 
-**Germline identity moves, and that is exactly why it must not be widened.**
-PLAbDab's patent corpus contains murine and chimeric sequences. Calibrating a
-humanness band on a population that includes them widens the band precisely far
-enough to stop catching them. It stays on the clinical population.
+**Germline identity moves, and the human-only filter does not fix it.** This is
+the result that matters most here, because it survives the obvious objection.
+One might expect that filtering PLAbDab to human germline calls would close the
+gap — if the murine sequences are gone, why would the humanness band still be
+too wide? It does not close:
+
+| | TheraSAbDab | PLAbDab (human-only) | gap |
+|---|---|---|---|
+| `vh_germline_identity` p5 | 0.768 | 0.724 | 4.4 points |
+| `vl_germline_identity` p5 | 0.815 | 0.739 | 7.6 points |
+
+The reason is in the filter's own definition: "human" is ANARCI's closest-
+germline call, so a humanised or heavily-engineered antibody whose nearest
+germline is human passes it while still sitting far from that germline. The
+filter removes murine *V genes*; it does not remove *distance from human
+germline*, which is precisely what this metric measures. Anchoring the band to
+the clinical population is therefore not redundant with `--human-only` — it is
+doing work the filter cannot do.
 
 ## 9.2 What §9.1 led to — and what it did NOT settle
 
@@ -349,7 +372,7 @@ antibodies is what makes it encode "human enough to dose a person".
 Everything else comes from the base, on the evidence in §9.1: loop lengths and
 cysteine count are repertoire properties and move a lot between the two
 populations, while surface properties barely move at all (`vh_aggregation` p5 =
-0.154 in both, to three significant figures) — so the larger population wins on
+0.156 in both, to three significant figures) — so the larger population wins on
 resolution for free. 29,147 antibodies support deviation tier 3; 393 support
 only tier 1.
 

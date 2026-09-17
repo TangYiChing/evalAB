@@ -1,5 +1,5 @@
 {
-  "reference": "PLAbDab/TheraSAbDab (clinical-stage)",
+  "reference": "PLAbDab/TheraSAbDab (clinical-stage), human-only, cleaned",
   "n_derivation": 393,
   "n_validation": 420,
   "cuts": [
