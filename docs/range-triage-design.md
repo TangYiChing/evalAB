@@ -280,85 +280,30 @@ PLAbDab's patent corpus contains murine and chimeric sequences. Calibrating a
 humanness band on a population that includes them widens the band precisely far
 enough to stop catching them. It stays on the clinical population.
 
-## 9.2 What is now the default
+## 9.2 What §9.1 led to — and what it did NOT settle
 
-`bands.compose(base, override, REPERTOIRE_METRICS)`: loop lengths and Fv
-cysteine count from PLAbDab, everything else from TheraSAbDab. Every band
-carries its own `source`, and every message names the population it was drawn
-from, so a mixed set can never quietly read as one.
+> **Superseded by §10.2.** The composition described here was an intermediate
+> arrangement: TheraSAbDab as the base, with loop lengths and cysteine count
+> taken from PLAbDab. The shipped configuration is the *inverse* — PLAbDab
+> (human-only, cleaned) as the base, with only germline identity taken from
+> the clinical population. Read §10.2 for what evalAB actually runs. This
+> section is kept because the measurement below is what motivated the change.
 
-```
-python -m antibody_prescreen.calibration.fit_bands --reference therasabdab \
-    --repertoire-bands antibody_prescreen/data/bands_plabdab.json
-```
+The reading that survived from §9.1 is the third one: loop lengths and cysteine
+count move a lot between the two populations, surface properties barely move at
+all, and germline identity must not be widened. Once surface properties were
+shown to be nearly population-independent, there was no longer a reason to pay
+TheraSAbDab's resolution cost for them — which is what turned the composition
+around. Note also that §9.1's table was fitted on 40,000 pairs **without** the
+`--human-only --clean` filters; the frozen bands in §10.3 were not.
 
-Validation half, composed vs original:
+Validation half, intermediate composition vs TheraSAbDab-only:
 
-| | original | composed |
+| | TheraSAbDab only | intermediate composition |
 |---|---|---|
 | L5 (discard) | 0.19% (PASS) | 0.19% (PASS) |
 | L4+L5 | 12.71% | **10.28%** |
 | `cdrh3_len` as an L4/L5 driver | 2.62% | **0.56%** |
-
-## 9.3 What it did to the design batch
-
-Still 23 of 23 at Level 4 on the full view. `cdrh1_len=7` survives the
-widening: it sits below the 1st percentile of 20,000 antibodies though above
-the 0.1st, so it is rare rather than unprecedented, which is a more defensible
-thing to say than the previous version was saying.
-
-Scaffold set aside, the introduced-findings view gained real spread:
-
-| | before widening | after |
-|---|---|---|
-| L1 | 1 | 6 |
-| L2 | 0 | 1 |
-| L3 | 19 | 13 |
-| L4 | 3 | 3 |
-
-`fv_cys_count=6` stopped being a finding for seven candidates, correctly: six
-cysteines in an Fv is unremarkable in the wider repertoire.
-
-## 9.4 The honest cost: separation got slightly worse, not better
-
-Held-out `Status`, introduced-findings view:
-
-| | before widening | after widening |
-|---|---|---|
-| Failed purity QC (n=7) | mean 3.00 | mean **2.14** |
-| Ready (n=16) | mean 3.06 | mean **2.75** |
-
-The failures now sit *below* the successes. On 7 versus 16 this is noise and
-nothing should be concluded from the direction — but it must be recorded, and
-it must not be reported as an improvement because the level distribution looks
-healthier. **A better-shaped distribution is not evidence of a better
-classifier**, and on this batch the level still does not track purity QC.
-
-The cysteine-parity observation from §7 is unchanged by the widening (4/4
-odd-cysteine candidates failed, p=0.0040), because parity is a mechanistic
-observation and no band touches it. It remains the only thing in this run with
-a signal, and it remains a single post-hoc observation on one parent.
-
-## 9.5 Still open
-
-- Whether to move everything except germline identity onto PLAbDab. §9.1 says
-  the surface bands are near-identical, so this would buy tier-3 resolution for
-  free. Not done, because it was not asked for and it is a decision about what
-  the system's reference population *is*.
-- The PLAbDab reference contains junk: 2.31% of the validation half tripped
-  `non_standard_aa` and 1.66% `anchor_substituted`. Those are truncated or
-  malformed database entries, not biology. Excluding mechanism-failing
-  sequences from a reference population is defensible and was **not** done here,
-  because it changes what the bands mean and nobody asked for it.
-
----
-
-# 10. FROZEN — the definitive configuration
-
-Everything above §10 is the derivation record: what was tried, what broke, what
-it taught. This section is the system as it stands. Where §5-§9 quote a number
-that §10 contradicts, §10 is correct — earlier sections are left unedited on
-purpose, because a record that gets tidied after the fact stops being a record.
 
 ## 10.1 Declared scope
 
